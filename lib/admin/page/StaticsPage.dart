@@ -67,8 +67,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
     try {
       final provider = Provider.of<AdminProvider>(context, listen: false);
       final result = await provider.getStatics(
-        widget.index,
-        '?session=${_selectedSession!.id}',context
+          widget.index,
+          '?session=${_selectedSession!.id}',context
       );
 
       setState(() {
@@ -174,13 +174,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
                               : _loadStatistics,
                           icon: _loading
                               ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
                               : const Icon(Icons.search),
                           label: Text(_loading ? 'Yuklanmoqda...' : 'Ko\'rish'),
                           style: ElevatedButton.styleFrom(
@@ -555,13 +555,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   List<Widget> _buildQuestionCards(StaticsModel statistics) {
     return statistics.questionsList?.asMap().entries.map((entry) {
-          final index = entry.key;
-          final question = entry.value;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: _buildQuestionCard(question, index + 1),
-          );
-        }).toList() ??
+      final index = entry.key;
+      final question = entry.value;
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: _buildQuestionCard(question, index + 1),
+      );
+    }).toList() ??
         [];
   }
 
@@ -576,14 +576,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
     final total =
         question.resultsList?.fold<num>(
           0,
-          (sum, result) => sum + (result.count ?? 0),
+              (sum, result) => sum + (result.count ?? 0),
         ) ??
-        0;
+            0;
 
     return Card(
       elevation: 2,
       color: Colors.white,
-
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -701,6 +700,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
   }
 
   Widget _buildResultItem(Results result, String percentage) {
+    // Teachers yoki departments mavjudligini tekshirish
+    final hasTeachers = result.teachersList != null && result.teachersList!.isNotEmpty;
+    final hasDepartments = result.departmentsList != null && result.departmentsList!.isNotEmpty;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -732,16 +735,17 @@ class _StatisticsPageState extends State<StatisticsPage> {
           style: TextStyle(color: Colors.grey[600], fontSize: 14),
         ),
         children: [
-          if (result.teachersList != null && result.teachersList!.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // O'qituvchilar bo'limi
+                if (hasTeachers) ...[
                   Row(
                     children: [
                       Icon(Icons.person, size: 18, color: Colors.grey[600]),
@@ -806,8 +810,94 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     );
                   }).toList(),
                 ],
-              ),
+
+                // Departmentlar bo'limi
+                if (hasDepartments) ...[
+                  if (hasTeachers) const SizedBox(height: 16),
+                  if (hasTeachers) Divider(color: Colors.grey[300]),
+                  if (hasTeachers) const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Icon(Icons.business, size: 18, color: Colors.grey[600]),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Kafedra bo\'yicha:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ...result.departmentsList!.map((department) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: Colors.blue[100],
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${department.count}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  department.departmentName ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  '${department.count} marta belgilandi',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ],
+
+                // Agar hech narsa bo'lmasa
+                if (!hasTeachers && !hasDepartments)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'Qo\'shimcha ma\'lumot yo\'q',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
+          ),
         ],
       ),
     );
@@ -818,8 +908,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
     int responseCount = 0;
 
     for (var response in responses) {
-      responseCount += response.count!.toInt() ?? 0;
+      responseCount += response.count?.toInt() ?? 0;
     }
+
     return Card(
       elevation: 2,
       color: Colors.white,
@@ -878,7 +969,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Jami javoblar: ${responseCount}',
+              'Jami javoblar: $responseCount',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
@@ -891,10 +982,12 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: responses.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
+                separatorBuilder: (context, index) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final response = responses[index];
+                  final hasTeachers = response.teachersList != null && response.teachersList!.isNotEmpty;
+                  final hasDepartments = response.departmentsList != null && response.departmentsList!.isNotEmpty;
+
                   return Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -902,24 +995,155 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.grey[200]!),
                     ),
-                    child: Row(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '${response.count} ta javob berilgan ',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.deepPurple[100],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '${response.count} ta',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.deepPurple,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                response.text ?? '',
+                                style: const TextStyle(fontSize: 15),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            "${response.text}" ?? '',
-                            style: const TextStyle(fontSize: 15),
-                          ),
-                        ),
+
+                        // Teachers yoki Departments mavjud bo'lsa ko'rsatamiz
+                        if (hasTeachers || hasDepartments) ...[
+                          const SizedBox(height: 12),
+                          Divider(color: Colors.grey[300]),
+                          const SizedBox(height: 12),
+
+                          // O'qituvchilar
+                          if (hasTeachers) ...[
+                            Row(
+                              children: [
+                                Icon(Icons.person, size: 16, color: Colors.grey[600]),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'O\'qituvchilar:',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            ...response.teachersList!.map((teacher) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Row(
+                                  children: [
+                                    const SizedBox(width: 22),
+                                    Container(
+                                      width: 24,
+                                      height: 24,
+                                      decoration: BoxDecoration(
+                                        color: Colors.deepPurple[100],
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '${teacher.count}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.deepPurple,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        teacher.teacherName ?? '',
+                                        style: const TextStyle(fontSize: 13),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ],
+
+                          // Departmentlar
+                          if (hasDepartments) ...[
+                            if (hasTeachers) const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Icon(Icons.business, size: 16, color: Colors.grey[600]),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Kafedralar:',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            ...response.departmentsList!.map((department) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Row(
+                                  children: [
+                                    const SizedBox(width: 22),
+                                    Container(
+                                      width: 24,
+                                      height: 24,
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue[100],
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '${department.count}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blue,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        department.departmentName ?? '',
+                                        style: const TextStyle(fontSize: 13),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ],
+                        ],
                       ],
                     ),
                   );
