@@ -1,0 +1,224 @@
+{
+  "title": "Professor-o'qituvchilarning o'quv-pedagogik va ma'naviy-ma'rifiy faoliyatini baholash",
+  "description": "Sharof Rashidov nomidagi Samarqand Davlat universitetida o'qituvchilarning faoliyatini talabalar fikri asosida baholash",
+  "questions": [
+    {
+      "text": "Qaysi institut yoki fakultetda tahsil olasiz?",
+      "question_type": "single",
+      "is_required": true,
+      "order": 1,
+      "is_teacher": false,
+      "is_department": true,
+      "options": [
+        { "text": "Markaziy Osiyo xalqlari tillari va madaniyati instituti", "order": 1 },
+        { "text": "Agrobiotexnologiyalar va oziq-ovqat xavfsizligi instituti", "order": 2 },
+        { "text": "Muhandislik fizikasi instituti", "order": 3 },
+        { "text": "Inson resurslari va mahalla taraqqiyotini boshqarish instituti", "order": 4 },
+        { "text": "Biokimyo instituti", "order": 5 },
+        { "text": "Matematika fakulteti", "order": 6 },
+        { "text": "Tarix fakulteti", "order": 7 },
+        { "text": "Geografiya va ekologiya fakulteti", "order": 8 },
+        { "text": "Psixologiya va ijtimoiy-siyosiy fanlar fakulteti", "order": 9 },
+        { "text": "Sun'iy intellekt va raqamli texnologiyalar fakulteti", "order": 10 },
+        { "text": "Yuridik fakulteti", "order": 11 }
+      ]
+    },
+    {
+      "text": "Yoshingiz?",
+      "question_type": "single",
+      "is_required": true,
+      "order": 2,
+      "is_teacher": false,
+      "is_department": false,
+      "options": [
+        { "text": "18 yoshdan kichik", "order": 1 },
+        { "text": "18-20 yosh", "order": 2 },
+        { "text": "21-25 yosh", "order": 3 },
+        { "text": "26-30 yosh", "order": 4 },
+        { "text": "30 yoshdan katta", "order": 5 }
+      ]
+    },
+    {
+      "text": "Jinsingiz?",
+      "question_type": "single",
+      "is_required": true,
+      "order": 3,
+      "is_teacher": false,
+      "is_department": false,
+      "options": [
+        { "text": "Erkak", "order": 1 },
+        { "text": "Ayol", "order": 2 }
+      ]
+    },
+    {
+      "text": "Qaysi ta'lim shaklida tahsil olasiz?",
+      "question_type": "single",
+      "is_required": true,
+      "order": 4,
+      "is_teacher": false,
+      "is_department": false,
+      "options": [
+        { "text": "Kunduzgi", "order": 1 },
+        { "text": "Kechki", "order": 2 },
+        { "text": "Sirtqi", "order": 3 },
+        { "text": "Masofaviy", "order": 4 }
+      ]
+    },
+    {
+      "text": "O'quv mashg'ulotlar sifat darajasini qanday baholaysiz?",
+      "question_type": "single",
+      "is_required": true,
+      "order": 5,
+      "is_teacher": false,
+      "is_department": false,
+      "options": [
+        { "text": "Barcha darslar darslik asosida, adabiyot bilan, pedagogik va axborot texnologiyalar asosida juda qiziqarli, tushunarli o'tiladi", "order": 1 },
+        { "text": "Ayrim o'qituvchilar darsdan tashqari, mashg'ulotlarni qiziqarsiz va tushunarsiz olib boradi", "order": 2 },
+        { "text": "Aksariyat darslar qiziqarsiz va tushunarsiz olib boriladi", "order": 3 }
+      ]
+    },
+    {
+      "text": "Yana qanday baholashingiz mumkin? (o'qituvchining ismi familiyasini yozing)",
+      "question_type": "text",
+      "is_required": true,
+      "order": 6,
+      "is_teacher": true,
+      "is_department": true,
+      "options": []
+    },
+    {
+      "text": "O'qish jarayonida siz bilan bog'liq korruptsion holat yuzaga kelganmi?",
+      "question_type": "single",
+      "is_required": true,
+      "order": 7,
+      "is_teacher": false,
+      "is_department": false,
+      "options": [
+        { "text": "Ha", "order": 1 },
+        { "text": "Yo'q", "order": 2 }
+      ]
+    },
+    {
+      "text": "Sizningcha institut yoki fakultetingizda poraxo'r (ta'magir) o'qituvchilar...?",
+      "question_type": "single",
+      "is_required": true,
+      "order": 8,
+      "is_teacher": false,
+      "is_department": false,
+      "options": [
+        { "text": "Ko'paygan", "order": 1 },
+        { "text": "Kamaygan", "order": 2 },
+        { "text": "Umuman yo'q", "order": 3 }
+      ]
+    },
+    {
+      "text": "Poraxo'r deb bilgan o'qituvchilaringiz bo'lsa ism-familiyasini yozing",
+      "question_type": "text",
+      "is_required": true,
+      "order": 9,
+      "is_teacher": true,
+      "is_department": true,
+      "options": []
+    },
+    {
+      "text": "Sizni qaysi fan o'qituvchisining mavzuni ochib berish qobiliyati va dars o'tish usuli qoniqtirmaydi? (o'qituvchining ismi familiyasini yozing)",
+      "question_type": "text",
+      "is_required": true,
+      "order": 10,
+      "is_teacher": true,
+      "is_department": true,
+      "options": []
+    },
+    {
+      "text": "Qaysi o'qituvchilar baholash jarayonini adolat va shaffoflik darajasida baholamaydi? (o'qituvchining ismi familiyasini yozing)",
+      "question_type": "text",
+      "is_required": true,
+      "order": 11,
+      "is_teacher": true,
+      "is_department": true,
+      "options": []
+    },
+    {
+      "text": "Yakuniy nazorat imtihonlarida qaysi fanlar bo'yicha savollar (test, yozma, og'zaki) Sizni qoniqtirmaydi? Nima uchun? (fan nomini yozing)",
+      "question_type": "text",
+      "is_required": true,
+      "order": 12,
+      "is_teacher": false,
+      "is_department": false,
+      "options": []
+    },
+    {
+      "text": "Yakuniy nazorat imtihonlarida mas'ullar tomonidan ta'magirlik holatlari kuzatiladimi?",
+      "question_type": "single",
+      "is_required": true,
+      "order": 13,
+      "is_teacher": false,
+      "is_department": false,
+      "options": [
+        { "text": "Ha", "order": 1 },
+        { "text": "Yo'q", "order": 2 },
+        { "text": "Ba'zida bo'lib turadi", "order": 3 }
+      ]
+    },
+    {
+      "text": "Mustaqil ta'limning tashkil qilish darajasini qanday baholaysiz?",
+      "question_type": "single",
+      "is_required": true,
+      "order": 14,
+      "is_teacher": false,
+      "is_department": false,
+      "options": [
+        { "text": "Yuqori darajada", "order": 1 },
+        { "text": "Yaxshi", "order": 2 },
+        { "text": "Qisman tashkil qiladi", "order": 3 },
+        { "text": "Umuman tashkil qilmaydi", "order": 4 }
+      ]
+    },
+    {
+      "text": "Mustaqil ta'limni umuman tashkil qilmayotgan o'qituvchilar bo'lsa ism-familiyasini yozing",
+      "question_type": "text",
+      "is_required": true,
+      "order": 15,
+      "is_teacher": true,
+      "is_department": true,
+      "options": []
+    },
+    {
+      "text": "Sizga dars berayotgan o'qituvchilarning o'quv mashg'ulotlari nima sababdan zerikarli?",
+      "question_type": "multiple",
+      "is_required": true,
+      "order": 16,
+      "is_teacher": false,
+      "is_department": false,
+      "options": [
+        { "text": "Ular ma'ruzalarni konspekt, darslik yoki boshqa materiallardan o'qib berishadi", "order": 1 },
+        { "text": "Mashg'ulotlarda zamonaviy pedagogik va axborot texnologiyalardan foydalanmaydi", "order": 2 },
+        { "text": "Darslarga tayyorgarliksiz kirishadi", "order": 3 },
+        { "text": "Dars qolib, fanga dahldor bo'lmagan mavzularni aytib berishadi", "order": 4 }
+      ]
+    },
+    {
+      "text": "Darslar zerikarli bo'lgan o'qituvchilar bo'lsa ism-familiyasini yozing",
+      "question_type": "text",
+      "is_required": true,
+      "order": 17,
+      "is_teacher": true,
+      "is_department": true,
+      "options": []
+    },
+    {
+      "text": "Dars jarayonida o'qituvchi fandagi so'nggi yutuqlar va yangi adabiyotlardan faydolanadimi?",
+      "question_type": "single",
+      "is_required": true,
+      "order": 18,
+      "is_teacher": false,
+      "is_department": false,
+      "options": [
+        { "text": "Yaxshi foydalanadi", "order": 1 },
+        { "text": "O'rtacha foydalanadi", "order": 2 },
+        { "text": "Kam foydalanadi", "order": 3 },
+        { "text": "Umuman foydalanmaydi", "order": 4 }
+      ]
+    }
+  ]
+}
