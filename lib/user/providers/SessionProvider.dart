@@ -16,11 +16,10 @@ class SurveyProvider with ChangeNotifier {
   bool _isSessionExpired = false;
   bool get isSessionExpired => _isSessionExpired;
 
-  SurveyModel _survey = SurveyModel();
-  SurveyModel get survey => _survey;
+  SurveyModel? _survey ;
+  SurveyModel? get survey => _survey;
 
   final ApiService _apiService = ApiService();
-
   Future<void> getSurvey(dynamic code) async {
     _loading = true;
     notifyListeners();
@@ -28,21 +27,16 @@ class SurveyProvider with ChangeNotifier {
     try {
       var result = await _apiService.getSurvey(code);
 
-      if (result != null) {
-        _survey = result;
-        // result!.title o'rniga xavfsizroq usul:
-        print(_survey.title ?? "Sarlavha mavjud emas");
-      } else {
-        _survey = SurveyModel();
-      }
+      _survey = result; // null bo‘lishi mumkin
     } catch (e) {
       print("Survey olishda xatolik: $e");
-      _survey = SurveyModel();
+      _survey = null;
     } finally {
       _loading = false;
       notifyListeners();
     }
   }
+
 
   Future<void> getSession(dynamic code) async {
     _loading = true;

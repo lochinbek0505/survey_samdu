@@ -179,7 +179,7 @@ class ApiService {
       print(response);
       return EmployeeModel.fromJson(response.data);
     } on DioException catch (e) {
-      if (e.response?.statusCode == 401) {
+      if (e.response?.statusCode == 403 || e.response?.statusCode == 401) {
         return null;
       }
 
@@ -245,7 +245,7 @@ class ApiService {
       );
       return SessionListModel.fromJson(response.data);
     } on DioException catch (e) {
-      if (e.response?.statusCode == 401) {
+      if (e.response?.statusCode == 403 || e.response?.statusCode == 401) {
         await logout(context);
         return null;
       }

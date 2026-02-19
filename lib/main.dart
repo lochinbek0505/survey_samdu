@@ -8,6 +8,7 @@ import 'package:survey_samdu/user/providers/SessionProvider.dart';
 
 import 'admin/page/AdminPage.dart';
 import 'admin/provider/AdminProvider.dart';
+import 'admin/provider/SurveysProvider.dart';
 
 void main() {
   usePathUrlStrategy();
@@ -16,6 +17,7 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => SurveyProvider()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
+        ChangeNotifierProvider(create: (_) => SurveysProvider()),
       ],
       child: MyApp(),
     ),

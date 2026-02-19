@@ -6,6 +6,7 @@ import 'package:survey_samdu/admin/provider/AdminProvider.dart';
 import 'LoginPage.dart';
 import 'StaticsPage.dart';
 import 'SurveyListPage.dart';
+import 'SurveysPage.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -111,6 +112,20 @@ class ChosePage extends StatelessWidget {
                       },
                     ),
                   ],
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: size.width*0.7,
+                  child: _buildMenuButton(
+                    context,
+                    label: "So'rovnoma yaratish",
+                    icon: Icons.question_mark,
+                    color: Colors.red, // Yashilroq rang
+                    onTap: () {
+                      // Navigation kodini shu yerga qo'ying
+                      Navigator.push(context, MaterialPageRoute(builder: (builder) => SurveysPage(),));
+                    },
+                  ),
                 ),
               ],
             ),

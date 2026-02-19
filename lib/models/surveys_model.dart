@@ -2,20 +2,23 @@ class DataList {
   num? id;
   String? title;
   String? description;
-
+  num? owner;
   DataList({this.id, this.title, this.description});
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
     map["id"] = id;
     map["title"] = title;
+
     map["description"] = description;
+    map['owner'] = owner;
     return map;
   }
 
   DataList.fromJson(dynamic json){
     id = json["id"];
     title = json["title"];
+    owner = json["owner"];
     description = json["description"];
   }
 }

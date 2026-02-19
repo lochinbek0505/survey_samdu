@@ -1,102 +1,67 @@
-class Option {
-  num? id;
-  String? text;
-  num? order;
-
-  Option({this.id, this.text, this.order});
-
-  Map<String, dynamic> toJson() {
-    final map = <String, dynamic>{};
-    map["id"] = id;
-    map["text"] = text;
-    map["order"] = order;
-    return map;
-  }
-
-  Option.fromJson(dynamic json){
-    id = json["id"];
-    text = json["text"];
-    order = json["order"];
-  }
-}
-
-class Questions {
-  num? id;
-  String? text;
-  String? questionType;
-  bool? isRequired;
-  num? order;
-  bool? isTeacher;
-  bool? isDepartment;
-  List<Option>? optionsList;
-
-  Questions(
-      {this.id, this.text, this.questionType, this.isRequired, this.order, this.isTeacher, this.isDepartment, this.optionsList});
-
-  Map<String, dynamic> toJson() {
-    final map = <String, dynamic>{};
-    map["id"] = id;
-    map["text"] = text;
-    map["question_type"] = questionType;
-    map["is_required"] = isRequired;
-    map["order"] = order;
-    map["is_teacher"] = isTeacher;
-    map["is_department"] = isDepartment;
-    if (optionsList != null) {
-      map["options"] = optionsList?.map((v) => v.toJson()).toList();
-    }
-    return map;
-  }
-
-  Questions.fromJson(dynamic json){
-    id = json["id"];
-    text = json["text"];
-    questionType = json["question_type"];
-    isRequired = json["is_required"];
-    order = json["order"];
-    isTeacher = json["is_teacher"];
-    isDepartment = json["is_department"];
-    if (json["options"] != null) {
-      optionsList = [];
-      json["options"].forEach((v) {
-        optionsList?.add(Option.fromJson(v));
-      });
-    }
-  }
-}
+import 'question_model.dart';
 
 class SurveyModel {
-  num? id;
-  String? title;
-  String? description;
-  List<Questions>? questionsList;
-  String? createdAt;
+  final int id;
+  final String title;
+  final String description;
+  final int owner;
+  final DateTime? createdAt;
 
-  SurveyModel(
-      {this.id, this.title, this.description, this.questionsList, this.createdAt});
+  final List<QuestionModel> questions;
 
-  Map<String, dynamic> toJson() {
-    final map = <String, dynamic>{};
-    map["id"] = id;
-    map["title"] = title;
-    map["description"] = description;
-    if (questionsList != null) {
-      map["questions"] = questionsList?.map((v) => v.toJson()).toList();
-    }
-    map["created_at"] = createdAt;
-    return map;
+  SurveyModel({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.owner,
+    required this.createdAt,
+    required this.questions,
+  });
+
+  factory SurveyModel.fromJson(Map<String, dynamic> json) {
+    return SurveyModel(
+      id: json['id'] ?? 0,
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      owner: json['owner'] ?? 0,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'])
+          : null,
+      questions: QuestionModel.listFromJson(json['questions']),
+    );
   }
 
-  SurveyModel.fromJson(dynamic json){
-    id = json["id"];
-    title = json["title"];
-    description = json["description"];
-    if (json["questions"] != null) {
-      questionsList = [];
-      json["questions"].forEach((v) {
-        questionsList?.add(Questions.fromJson(v));
-      });
-    }
-    createdAt = json["created_at"];
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "title": title,
+    "description": description,
+    "owner": owner,
+    "created_at": createdAt?.toIso8601String(),
+    "questions": questions.map((e) => e.toJson()).toList(),
+  };
+
+  static List<SurveyModel> listFromJson(List<dynamic>? data) {
+    if (data == null) return [];
+    return data
+        .map((e) => SurveyModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  SurveyModel copyWith({
+    int? id,
+    String? title,
+    String? description,
+    int? owner,
+    DateTime? createdAt,
+    List<QuestionModel>? questions,
+  }) {
+    return SurveyModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      owner: owner ?? this.owner,
+      createdAt: createdAt ?? this.createdAt,
+      questions: questions ?? this.questions,
+    );
   }
 }

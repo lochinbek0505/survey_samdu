@@ -30,6 +30,7 @@ class _SurveyPageState extends State<SurveyPage> {
 
   String? _deviceId;
   bool _isSurveyCompleted = false;
+  bool _hasError = false; // Track if there is an error
 
   // Add ScrollController to preserve scroll position
   final ScrollController _scrollController = ScrollController();
@@ -42,11 +43,18 @@ class _SurveyPageState extends State<SurveyPage> {
     print(widget.session_code);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       var provider = context.read<SurveyProvider>();
-      provider.getSession(widget.session_code).then((_) {
-        if (provider.session?.survey != null) {
-          provider.getSurvey(provider.session!.code);
-        }
-      });
+      provider
+          .getSession(widget.session_code)
+          .then((_) {
+            if (provider.session?.survey != null) {
+              provider.getSurvey(provider.session!.code);
+            }
+          })
+          .catchError((error) {
+            setState(() {
+              _hasError = true; // Set error state
+            });
+          });
     });
   }
 
@@ -116,7 +124,7 @@ class _SurveyPageState extends State<SurveyPage> {
     final language = html.window.navigator.language;
     final platform = html.window.navigator.platform;
     final screenResolution =
-        '${html.window.screen?.width}x${html.window.screen?.height}';
+        '[0;37m{{(}}${html.window.screen?.width}x${html.window.screen?.height}{{)}}[0;30m';
 
     final fingerprint =
         '·userAgent·${userAgent}·language·${language}·platform·${platform}·screenResolution·${screenResolution}';
@@ -206,6 +214,27 @@ class _SurveyPageState extends State<SurveyPage> {
       );
     } else if (provider.session == null || provider.survey?.id == null) {
       return const Center(child: CircularProgressIndicator());
+    } else if (_hasError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              "Xatolik: Ma'lumotlarni yuklashda muammo bo'ldi.",
+              style: TextStyle(color: Colors.red),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _hasError = false; // Reset error
+                  provider.getSession(widget.session_code);
+                });
+              },
+              child: const Text('Qaytadan urinib ko‘ring'),
+            ),
+          ],
+        ),
+      );
     } else {
       return buildSurveyContent(provider);
     }
@@ -292,7 +321,7 @@ class _SurveyPageState extends State<SurveyPage> {
                         selectedTeacher.clear();
                         _isSurveyCompleted = true;
                         html.window.localStorage[widget.session_code] =
-                        'completed'; // Store completion in localStorage
+                            'completed'; // Store completion in localStorage
                       });
                     },
                     style: ElevatedButton.styleFrom(
@@ -439,7 +468,7 @@ class _SurveyPageState extends State<SurveyPage> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  '${provider.survey?.questionsList?.length ?? 0} ta savol',
+                                  '[0;37m${provider.survey?.questions?.length ?? 0} ta savol',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w500,
@@ -457,11 +486,11 @@ class _SurveyPageState extends State<SurveyPage> {
                   const SizedBox(height: 32),
 
                   // Questions
-                  if (provider.survey?.questionsList != null &&
-                      provider.survey!.questionsList!.isNotEmpty)
-                    ...provider.survey!.questionsList!.asMap().entries.map((
-                        entry,
-                        ) {
+                  if (provider.survey?.questions != null &&
+                      provider.survey!.questions!.isNotEmpty)
+                    ...provider.survey!.questions!.asMap().entries.map((
+                      entry,
+                    ) {
                       int index = entry.key;
                       var question = entry.value;
                       return Padding(
@@ -508,7 +537,7 @@ class _SurveyPageState extends State<SurveyPage> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.green.withOpacity(0.3),
+                          color: Colors.green.withValues(alpha: 0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -518,8 +547,8 @@ class _SurveyPageState extends State<SurveyPage> {
                       onPressed: _isSurveyCompleted
                           ? null
                           : () {
-                        _submitSurvey(provider);
-                      },
+                              _submitSurvey(provider);
+                            },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
@@ -695,7 +724,7 @@ class _SurveyPageState extends State<SurveyPage> {
             else if (question.questionType == 'multiple')
               buildMultipleChoice(question, isDesktop)
             else if (question.questionType == 'text')
-                buildTextInput(question, isDesktop),
+              buildTextInput(question, isDesktop),
           ],
         ),
       ),
@@ -1013,7 +1042,7 @@ class _SurveyPageState extends State<SurveyPage> {
   Map<String, dynamic> _buildSubmitJson(SurveyProvider provider) {
     List<Map<String, dynamic>> answersList = [];
 
-    provider.survey?.questionsList?.forEach((question) {
+    provider.survey?.questions?.forEach((question) {
       int questionId = question.id?.toInt() ?? 0;
       Map<String, dynamic> answerData = {"question": questionId};
 
@@ -1033,14 +1062,14 @@ class _SurveyPageState extends State<SurveyPage> {
         }
       }
 
-      if (question.isTeacher == true && selectedTeacher[questionId] != null) {
+      if (question.options.first.eduType=='teacher' && selectedTeacher[questionId] != null) {
         answerData["teacher_name"] = selectedTeacher[questionId]!['name'];
         answerData["teacher_id"] = selectedTeacher[questionId]!['id']
             .toString();
       }
 
       // Add department info ONLY if selected
-      if ((question.isDepartment == true || question.isTeacher == true) &&
+      if ((question.options.first.eduType=='teacher') &&
           selectedDepartment[questionId] != null) {
         answerData["department_name"] = selectedDepartment[questionId]!['name'];
         answerData["department_id"] = selectedDepartment[questionId]!['id']
@@ -1056,7 +1085,7 @@ class _SurveyPageState extends State<SurveyPage> {
     List<String> errors = [];
     print(answers);
     // Validate required questions
-    provider.survey?.questionsList?.forEach((question) {
+    provider.survey?.questions?.forEach((question) {
       print(question.isRequired);
       if (question.isRequired!) {
         int qId = question.id?.toInt() ?? 0;

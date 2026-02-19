@@ -405,6 +405,17 @@ class _CreateSessionDialogState extends State<CreateSessionDialog> {
     }
   }
 
+  String _getGroupName() {
+    // Agar guruh tanlangan bo'lsa, guruh nomini qaytaradi
+    // Aks holda fakultet nomini qaytaradi
+    if (_selectedGroup != null) {
+      return _selectedGroup!.name ?? '';
+    } else if (_selectedFaculty != null) {
+      return _selectedFaculty!.name ?? '';
+    }
+    return '';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -456,7 +467,7 @@ class _CreateSessionDialogState extends State<CreateSessionDialog> {
                       ),
                     ),
                     validator: (value) =>
-                        value?.isEmpty ?? true ? 'Nomini kiriting' : null,
+                    value?.isEmpty ?? true ? 'Nomini kiriting' : null,
                   ),
                   const SizedBox(height: 16),
 
@@ -489,11 +500,11 @@ class _CreateSessionDialogState extends State<CreateSessionDialog> {
                       }
                     },
                     validator: (value) =>
-                        value == null ? 'Fakultetni tanlang' : null,
+                    value == null ? 'Fakultetni tanlang' : null,
                   ),
                   const SizedBox(height: 16),
 
-                  // Guruh tanlash
+                  // Guruh tanlash (ixtiyoriy)
                   if (_loadingGroups)
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -504,31 +515,57 @@ class _CreateSessionDialogState extends State<CreateSessionDialog> {
                       child: const Center(child: CircularProgressIndicator()),
                     )
                   else if (_selectedFaculty != null && _groups != null)
-                    DropdownButtonFormField<Items>(
-                      decoration: InputDecoration(
-                        labelText: 'Guruh',
-                        prefixIcon: const Icon(Icons.group),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      value: _selectedGroup,
-                      items: _groups?.map((group) {
-                        return DropdownMenuItem<Items>(
-                          value: group,
-                          child: SizedBox(
-                            width: 300,
-                            child: Text(group.name ?? ''),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DropdownButtonFormField<Items>(
+                          decoration: InputDecoration(
+                            labelText: 'Guruh (ixtiyoriy)',
+                            hintText: 'Guruh tanlanmasa fakultet ishlatiladi',
+                            prefixIcon: const Icon(Icons.group),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                        );
-                      }).toList(),
-                      onChanged: (Items? value) {
-                        setState(() {
-                          _selectedGroup = value;
-                        });
-                      },
-                      validator: (value) =>
-                          value == null ? 'Guruhni tanlang' : null,
+                          value: _selectedGroup,
+                          items: _groups?.map((group) {
+                            return DropdownMenuItem<Items>(
+                              value: group,
+                              child: SizedBox(
+                                width: 300,
+                                child: Text(group.name ?? ''),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (Items? value) {
+                            setState(() {
+                              _selectedGroup = value;
+                            });
+                          },
+                          // validator ni o'chiramiz - majburiy emas
+                        ),
+                        if (_selectedGroup == null && _selectedFaculty != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8, left: 12),
+                            child: Row(
+                              children: [
+                                Icon(Icons.info_outline,
+                                  size: 16,
+                                  color: Colors.blue[700],
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Ishlatiladi: ${_selectedFaculty!.name}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blue[700],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     )
                   else
                     Container(
@@ -582,8 +619,8 @@ class _CreateSessionDialogState extends State<CreateSessionDialog> {
                       child: Text(
                         _selectedDateTime != null
                             ? DateFormat(
-                                'dd.MM.yyyy HH:mm',
-                              ).format(_selectedDateTime!)
+                          'dd.MM.yyyy HH:mm',
+                        ).format(_selectedDateTime!)
                             : 'Vaqtni tanlang',
                         style: TextStyle(
                           color: _selectedDateTime != null
@@ -608,48 +645,47 @@ class _CreateSessionDialogState extends State<CreateSessionDialog> {
                             onPressed: provider.loading
                                 ? null
                                 : () async {
-                                    if (_formKey.currentState!.validate() &&
-                                        _selectedDateTime != null) {
-                                      final data = {
-                                        "survey": 3,
-                                        "name": _nameController.text,
-                                        "group_name":
-                                            _selectedGroup?.name ?? '',
-                                        "start_time": _selectedDateTime!
-                                            .toIso8601String(),
-                                        "duration": int.parse(
-                                          _durationController.text,
-                                        ),
-                                      };
+                              if (_formKey.currentState!.validate() &&
+                                  _selectedDateTime != null) {
+                                final data = {
+                                  "survey": 3,
+                                  "name": _nameController.text,
+                                  "group_name": _getGroupName(),
+                                  "start_time": _selectedDateTime!
+                                      .toIso8601String(),
+                                  "duration": int.parse(
+                                    _durationController.text,
+                                  ),
+                                };
 
-                                      final result = await provider
-                                          .createSession(data);
-                                      await provider.getSessions(context);
+                                final result = await provider
+                                    .createSession(data);
+                                await provider.getSessions(context);
 
-                                      Navigator.pop(context);
-                                      _showSuccessDialog(context, result);
-                                    } else if (_selectedDateTime == null) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Boshlanish vaqtini tanlang',
-                                          ),
-                                          backgroundColor: Colors.orange,
-                                        ),
-                                      );
-                                    }
-                                  },
+                                Navigator.pop(context);
+                                _showSuccessDialog(context, result);
+                              } else if (_selectedDateTime == null) {
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Boshlanish vaqtini tanlang',
+                                    ),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                              }
+                            },
                             icon: provider.loading
                                 ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
                                 : const Icon(Icons.check),
                             label: Text(
                               provider.loading ? 'Yaratilmoqda...' : 'Yaratish',
@@ -709,27 +745,47 @@ class EditSessionDialog extends StatefulWidget {
 class _EditSessionDialogState extends State<EditSessionDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
-  late TextEditingController _groupNameController;
   late TextEditingController _durationController;
   DateTime? _selectedDateTime;
+
+  // Fakultet va guruh uchun o'zgaruvchilar
+  Faculties? _selectedFaculty;
+  Items? _selectedGroup;
+  bool _loadingGroups = false;
+  List<Items>? _groups;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.session.name);
-    _groupNameController = TextEditingController(
-      text: widget.session.groupName,
-    );
     _durationController = TextEditingController(
       text: widget.session.duration.toString(),
     );
     _selectedDateTime = DateTime.parse(widget.session.startTime!);
+
+    // Eski group_name dan fakultet va guruhni aniqlashga harakat qilish
+    _initializeFacultyAndGroup();
+  }
+
+  void _initializeFacultyAndGroup() {
+    final groupName = widget.session.groupName ?? '';
+
+    // Fakultetlarni tekshirish
+    for (var faculty in AppConsts.fakultetlar.dataListList ?? []) {
+      if (faculty.name == groupName) {
+        _selectedFaculty = faculty;
+        // Fakultet topildi, guruhlarni yuklash kerak
+        if (faculty.id != null) {
+          _loadGroups(faculty.id!);
+        }
+        break;
+      }
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _groupNameController.dispose();
     _durationController.dispose();
     super.dispose();
   }
@@ -762,6 +818,54 @@ class _EditSessionDialogState extends State<EditSessionDialog> {
         });
       }
     }
+  }
+
+  Future<void> _loadGroups(num departmentId) async {
+    setState(() {
+      _loadingGroups = true;
+      _selectedGroup = null;
+      _groups = null;
+    });
+
+    try {
+      final provider = Provider.of<AdminProvider>(context, listen: false);
+      final groupsModel = await provider.getGroups(departmentId);
+
+      setState(() {
+        _groups = groupsModel?.itemsList ?? [];
+        _loadingGroups = false;
+
+        // Agar mavjud group_name guruhlar ro'yxatida bo'lsa, uni tanlash
+        final currentGroupName = widget.session.groupName ?? '';
+        for (var group in _groups ?? []) {
+          if (group.name == currentGroupName) {
+            _selectedGroup = group;
+            break;
+          }
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _loadingGroups = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Guruhlarni yuklashda xatolik: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  String _getGroupName() {
+    // Agar guruh tanlangan bo'lsa, guruh nomini qaytaradi
+    // Aks holda fakultet nomini qaytaradi
+    if (_selectedGroup != null) {
+      return _selectedGroup!.name ?? '';
+    } else if (_selectedFaculty != null) {
+      return _selectedFaculty!.name ?? '';
+    }
+    return widget.session.groupName ?? '';
   }
 
   @override
@@ -814,22 +918,128 @@ class _EditSessionDialogState extends State<EditSessionDialog> {
                       ),
                     ),
                     validator: (value) =>
-                        value?.isEmpty ?? true ? 'Nomini kiriting' : null,
+                    value?.isEmpty ?? true ? 'Nomini kiriting' : null,
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _groupNameController,
+
+                  // Fakultet tanlash
+                  DropdownButtonFormField<Faculties>(
                     decoration: InputDecoration(
-                      labelText: 'Guruh nomi',
-                      prefixIcon: const Icon(Icons.group),
+                      labelText: 'Fakultet',
+                      prefixIcon: const Icon(Icons.business),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
+                    value: _selectedFaculty,
+                    items: AppConsts.fakultetlar.dataListList?.map((faculty) {
+                      return DropdownMenuItem<Faculties>(
+                        value: faculty,
+                        child: SizedBox(
+                          width: 300,
+                          child: Text(faculty.name ?? ''),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (Faculties? value) {
+                      setState(() {
+                        _selectedFaculty = value;
+                        _selectedGroup = null;
+                      });
+                      if (value?.id != null) {
+                        _loadGroups(value!.id!);
+                      }
+                    },
                     validator: (value) =>
-                        value?.isEmpty ?? true ? 'Guruh nomini kiriting' : null,
+                    value == null ? 'Fakultetni tanlang' : null,
                   ),
                   const SizedBox(height: 16),
+
+                  // Guruh tanlash (ixtiyoriy)
+                  if (_loadingGroups)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(child: CircularProgressIndicator()),
+                    )
+                  else if (_selectedFaculty != null && _groups != null)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DropdownButtonFormField<Items>(
+                          decoration: InputDecoration(
+                            labelText: 'Guruh (ixtiyoriy)',
+                            hintText: 'Guruh tanlanmasa fakultet ishlatiladi',
+                            prefixIcon: const Icon(Icons.group),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          value: _selectedGroup,
+                          items: _groups?.map((group) {
+                            return DropdownMenuItem<Items>(
+                              value: group,
+                              child: SizedBox(
+                                width: 300,
+                                child: Text(group.name ?? ''),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (Items? value) {
+                            setState(() {
+                              _selectedGroup = value;
+                            });
+                          },
+                        ),
+                        if (_selectedGroup == null && _selectedFaculty != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8, left: 12),
+                            child: Row(
+                              children: [
+                                Icon(Icons.info_outline,
+                                  size: 16,
+                                  color: Colors.blue[700],
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Ishlatiladi: ${_selectedFaculty!.name}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blue[700],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        border: Border.all(color: Colors.grey[300]!),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.grey[600]),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Avval fakultetni tanlang',
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+
                   TextFormField(
                     controller: _durationController,
                     decoration: InputDecoration(
@@ -858,8 +1068,8 @@ class _EditSessionDialogState extends State<EditSessionDialog> {
                       child: Text(
                         _selectedDateTime != null
                             ? DateFormat(
-                                'dd.MM.yyyy HH:mm',
-                              ).format(_selectedDateTime!)
+                          'dd.MM.yyyy HH:mm',
+                        ).format(_selectedDateTime!)
                             : 'Vaqtni tanlang',
                       ),
                     ),
@@ -879,47 +1089,47 @@ class _EditSessionDialogState extends State<EditSessionDialog> {
                             onPressed: provider.loading
                                 ? null
                                 : () async {
-                                    if (_formKey.currentState!.validate() &&
-                                        _selectedDateTime != null) {
-                                      final data = {
-                                        "survey": widget.session.survey,
-                                        "name": _nameController.text,
-                                        "group_name": _groupNameController.text,
-                                        "start_time": _selectedDateTime!
-                                            .toIso8601String(),
-                                        "duration": int.parse(
-                                          _durationController.text,
-                                        ),
-                                      };
+                              if (_formKey.currentState!.validate() &&
+                                  _selectedDateTime != null) {
+                                final data = {
+                                  "survey": widget.session.survey,
+                                  "name": _nameController.text,
+                                  "group_name": _getGroupName(),
+                                  "start_time": _selectedDateTime!
+                                      .toIso8601String(),
+                                  "duration": int.parse(
+                                    _durationController.text,
+                                  ),
+                                };
 
-                                      await provider.updateSession(
-                                        data,
-                                        widget.session.id,
-                                      );
-                                      await provider.getSessions(context);
+                                await provider.updateSession(
+                                  data,
+                                  widget.session.id,
+                                );
+                                await provider.getSessions(context);
 
-                                      Navigator.pop(context);
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Sessiya muvaffaqiyatli yangilandi',
-                                          ),
-                                          backgroundColor: Colors.green,
-                                        ),
-                                      );
-                                    }
-                                  },
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Sessiya muvaffaqiyatli yangilandi',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            },
                             icon: provider.loading
                                 ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
                                 : const Icon(Icons.save),
                             label: Text(
                               provider.loading ? 'Saqlanmoqda...' : 'Saqlash',
@@ -970,7 +1180,7 @@ class _QRCodeDialogState extends State<QRCodeDialog> {
   Future<void> _saveQRCode() async {
     try {
       RenderRepaintBoundary boundary =
-          _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
       ui.Image image = await boundary.toImage(pixelRatio: 3.0);
       ByteData? byteData = await image.toByteData(
         format: ui.ImageByteFormat.png,
