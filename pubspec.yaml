@@ -45,6 +45,7 @@ dependencies:
   qr_flutter: ^4.1.0
   fl_chart: ^1.1.1
   flutter_launcher_icons: ^0.14.4
+  dropdown_search: ^6.0.2
 
 dev_dependencies:
   flutter_test:

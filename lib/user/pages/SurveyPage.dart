@@ -10,6 +10,7 @@ import 'package:universal_html/html.dart' as html;
 import '../providers/SessionProvider.dart';
 import '../widgets/DepartmentDropdown.dart';
 import '../widgets/FacultyDropdown.dart';
+import '../widgets/LessonDropdown.dart';
 import '../widgets/TeacherDropdown.dart';
 
 class SurveyPage extends StatefulWidget {
@@ -22,17 +23,20 @@ class SurveyPage extends StatefulWidget {
 }
 
 class _SurveyPageState extends State<SurveyPage> {
+  // Asosiy javoblar: {questionId: value}
   Map<int, dynamic> answers = {};
 
-  Map<int, Map<String, dynamic>> selectedFaculty = {}; // {id, name}
-  Map<int, Map<String, dynamic>> selectedDepartment = {}; // {id, name}
-  Map<int, Map<String, dynamic>> selectedTeacher = {}; // {id, name}
+  // Har bir option uchun edu ma'lumotlari
+  // Format: {questionId: {optionId: {faculty, department, teacher/lesson}}}
+  Map<int, Map<int, Map<String, Map<String, dynamic>>>> optionEduData = {};
+
+  // Dinamik child questionlar ro'yxati
+  List<dynamic> displayedQuestions = [];
 
   String? _deviceId;
   bool _isSurveyCompleted = false;
-  bool _hasError = false; // Track if there is an error
+  bool _hasError = false;
 
-  // Add ScrollController to preserve scroll position
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -46,15 +50,27 @@ class _SurveyPageState extends State<SurveyPage> {
       provider
           .getSession(widget.session_code)
           .then((_) {
-            if (provider.session?.survey != null) {
-              provider.getSurvey(provider.session!.code);
-            }
-          })
-          .catchError((error) {
-            setState(() {
-              _hasError = true; // Set error state
-            });
+        if (provider.session?.survey != null) {
+          provider.getSurvey(provider.session!.code).then((_) {
+            _initializeDisplayedQuestions(provider);
           });
+        }
+      })
+          .catchError((error) {
+        setState(() {
+          _hasError = true;
+        });
+      });
+    });
+  }
+
+  void _initializeDisplayedQuestions(SurveyProvider provider) {
+    setState(() {
+      // Faqat parent_option == null bo'lgan (asosiy) savollarni qo'shamiz
+      displayedQuestions = provider.survey?.questions
+          ?.where((q) => q.parentOption == null)
+          .toList() ??
+          [];
     });
   }
 
@@ -66,8 +82,7 @@ class _SurveyPageState extends State<SurveyPage> {
 
   Future<void> _checkSurveyCompletion() async {
     final storage = html.window.localStorage;
-    String? surveyId =
-        widget.session_code; // Assuming survey.id is same as session_code
+    String? surveyId = widget.session_code;
     if (storage[surveyId] == 'completed') {
       setState(() {
         _isSurveyCompleted = true;
@@ -124,10 +139,10 @@ class _SurveyPageState extends State<SurveyPage> {
     final language = html.window.navigator.language;
     final platform = html.window.navigator.platform;
     final screenResolution =
-        '[0;37m{{(}}${html.window.screen?.width}x${html.window.screen?.height}{{)}}[0;30m';
+        '${html.window.screen?.width}x${html.window.screen?.height}';
 
     final fingerprint =
-        '·userAgent·${userAgent}·language·${language}·platform·${platform}·screenResolution·${screenResolution}';
+        'userAgent:${userAgent}|language:${language}|platform:${platform}|screen:${screenResolution}';
 
     int hash = 0;
     for (int i = 0; i < fingerprint.length; i++) {
@@ -136,6 +151,51 @@ class _SurveyPageState extends State<SurveyPage> {
     }
 
     return hash.abs().toString();
+  }
+
+  // Child questionlarni qo'shish/o'chirish
+  void _handleOptionSelection(dynamic option, bool isSelected) {
+    if (option.childQuestions.isNotEmpty) {
+      setState(() {
+        if (isSelected) {
+          // Child questionlarni qo'shamiz
+          for (var childQuestion in option.childQuestions) {
+            // Agar bu child question allaqachon mavjud bo'lmasa
+            if (!displayedQuestions.any((q) => q.id == childQuestion.id)) {
+              // Parent question indexini topamiz
+              int parentIndex = displayedQuestions.indexWhere(
+                    (q) => q.options?.any((opt) => opt.id == option.id) ?? false,
+              );
+              if (parentIndex != -1) {
+                // Parent questiondan keyin qo'shamiz
+                displayedQuestions.insert(parentIndex + 1, childQuestion);
+              }
+            }
+          }
+        } else {
+          // Child questionlarni o'chiramiz
+          for (var childQuestion in option.childQuestions) {
+            displayedQuestions.removeWhere((q) => q.id == childQuestion.id);
+            // Child questionning javoblarini ham o'chiramiz
+            answers.remove(childQuestion.id?.toInt());
+            optionEduData.remove(childQuestion.id?.toInt());
+          }
+        }
+      });
+    }
+  }
+
+  // Group bo'yicha savollarni guruhlash
+  Map<int, List<dynamic>> _groupQuestions() {
+    Map<int, List<dynamic>> groupedQuestions = {};
+    for (var question in displayedQuestions) {
+      int groupId = question.group ?? 0;
+      if (!groupedQuestions.containsKey(groupId)) {
+        groupedQuestions[groupId] = [];
+      }
+      groupedQuestions[groupId]!.add(question);
+    }
+    return groupedQuestions;
   }
 
   @override
@@ -164,7 +224,6 @@ class _SurveyPageState extends State<SurveyPage> {
               const SizedBox(height: 24),
               Text(
                 "Siz ushbu so'rovnomani tugatdingiz!",
-                // Message indicating survey completion
                 style: Theme.of(context).textTheme.headlineSmall,
                 textAlign: TextAlign.center,
               ),
@@ -219,18 +278,20 @@ class _SurveyPageState extends State<SurveyPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            const Text(
               "Xatolik: Ma'lumotlarni yuklashda muammo bo'ldi.",
               style: TextStyle(color: Colors.red),
             ),
+            const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
                 setState(() {
-                  _hasError = false; // Reset error
+                  _hasError = false;
+                  var provider = context.read<SurveyProvider>();
                   provider.getSession(widget.session_code);
                 });
               },
-              child: const Text('Qaytadan urinib ko‘ring'),
+              child: const Text('Qaytadan urinib ko\'ring'),
             ),
           ],
         ),
@@ -313,15 +374,13 @@ class _SurveyPageState extends State<SurveyPage> {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.of(context).pop();
-                      // Clear all form data
                       setState(() {
                         answers.clear();
-                        selectedFaculty.clear();
-                        selectedDepartment.clear();
-                        selectedTeacher.clear();
+                        optionEduData.clear();
+                        displayedQuestions.clear();
                         _isSurveyCompleted = true;
                         html.window.localStorage[widget.session_code] =
-                            'completed'; // Store completion in localStorage
+                        'completed';
                       });
                     },
                     style: ElevatedButton.styleFrom(
@@ -360,11 +419,15 @@ class _SurveyPageState extends State<SurveyPage> {
         bool isDesktop = constraints.maxWidth > 900;
         double maxWidth = isDesktop ? 800 : double.infinity;
 
+        // Savollarni guruhlaymiz
+        Map<int, List<dynamic>> groupedQuestions = _groupQuestions();
+        List<int> groupIds = groupedQuestions.keys.toList()..sort();
+
         return Center(
           child: Container(
             constraints: BoxConstraints(maxWidth: maxWidth),
             child: SingleChildScrollView(
-              controller: _scrollController, // Add controller here
+              controller: _scrollController,
               padding: EdgeInsets.all(isDesktop ? 40 : 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -468,7 +531,7 @@ class _SurveyPageState extends State<SurveyPage> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  '[0;37m${provider.survey?.questions?.length ?? 0} ta savol',
+                                  '${displayedQuestions.length} ta savol',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w500,
@@ -485,21 +548,71 @@ class _SurveyPageState extends State<SurveyPage> {
 
                   const SizedBox(height: 32),
 
-                  // Questions
-                  if (provider.survey?.questions != null &&
-                      provider.survey!.questions!.isNotEmpty)
-                    ...provider.survey!.questions!.asMap().entries.map((
-                      entry,
-                    ) {
-                      int index = entry.key;
-                      var question = entry.value;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 20),
-                        child: buildQuestionCard(
-                          question,
-                          index + 1,
-                          isDesktop,
-                        ),
+                  // Guruhlab savollarni chiqaramiz
+                  if (displayedQuestions.isNotEmpty)
+                    ...groupIds.map((groupId) {
+                      List<dynamic> questionsInGroup =
+                      groupedQuestions[groupId]!;
+                      String groupName =
+                          questionsInGroup.first.groupName ?? 'Umumiy';
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Guruh nomi
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.blue[200]!,
+                                width: 2,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.folder_outlined,
+                                  color: Colors.blue[700],
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  groupName,
+                                  style: TextStyle(
+                                    fontSize: isDesktop ? 18 : 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue[800],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Guruh ichidagi savollar
+                          ...questionsInGroup.asMap().entries.map((entry) {
+                            int localIndex = entry.key;
+                            var question = entry.value;
+                            int globalNumber =
+                                displayedQuestions.indexOf(question) + 1;
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 20),
+                              child: buildQuestionCard(
+                                question,
+                                globalNumber,
+                                isDesktop,
+                              ),
+                            );
+                          }).toList(),
+
+                          const SizedBox(height: 16),
+                        ],
                       );
                     }).toList()
                   else
@@ -537,7 +650,7 @@ class _SurveyPageState extends State<SurveyPage> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.green.withValues(alpha: 0.3),
+                          color: Colors.green.withOpacity(0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -547,8 +660,8 @@ class _SurveyPageState extends State<SurveyPage> {
                       onPressed: _isSurveyCompleted
                           ? null
                           : () {
-                              _submitSurvey(provider);
-                            },
+                        _submitSurvey(provider);
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
@@ -593,9 +706,6 @@ class _SurveyPageState extends State<SurveyPage> {
   }
 
   Widget buildQuestionCard(question, int number, bool isDesktop) {
-    bool needsDropdown =
-        question.isTeacher == true || question.isDepartment == true;
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -678,30 +788,6 @@ class _SurveyPageState extends State<SurveyPage> {
                             ),
                         ],
                       ),
-
-                      // Badges
-                      if (question.isTeacher == true ||
-                          question.isDepartment == true) ...[
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            if (question.isTeacher == true)
-                              _buildBadge(
-                                'O\'qituvchi',
-                                Icons.person_rounded,
-                                Colors.green,
-                              ),
-                            if (question.isDepartment == true)
-                              _buildBadge(
-                                'Kafedra',
-                                Icons.business_rounded,
-                                Colors.orange,
-                              ),
-                          ],
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -710,21 +796,13 @@ class _SurveyPageState extends State<SurveyPage> {
 
             const SizedBox(height: 24),
 
-            // Dropdowns for Faculty, Department, Teacher
-            if (needsDropdown) ...[
-              buildDropdownSection(question),
-              const SizedBox(height: 20),
-              Divider(color: Colors.grey[200], thickness: 1),
-              const SizedBox(height: 20),
-            ],
-
             // Question Input based on type
             if (question.questionType == 'single')
               buildSingleChoice(question, isDesktop)
             else if (question.questionType == 'multiple')
               buildMultipleChoice(question, isDesktop)
             else if (question.questionType == 'text')
-              buildTextInput(question, isDesktop),
+                buildTextInput(question, isDesktop),
           ],
         ),
       ),
@@ -757,127 +835,167 @@ class _SurveyPageState extends State<SurveyPage> {
     );
   }
 
-  Widget buildDropdownSection(question) {
-    int questionId = question.id?.toInt() ?? 0;
+  // EDU_TYPE uchun dropdown yaratish
+  Widget buildDropdownForOption(
+      question,
+      option,
+      int questionId,
+      int optionId,
+      bool isDesktop,
+      ) {
+    String eduType = option.eduType ?? 'none';
 
-    // Only show dropdowns if isDepartment OR isTeacher is true
-    bool showDepartmentDropdown = question.isDepartment == true;
-    bool showTeacherDropdown = question.isTeacher == true;
-
-    if (!showDepartmentDropdown && !showTeacherDropdown) {
-      return const SizedBox.shrink(); // Don't show anything
+    if (eduType == 'none') {
+      return const SizedBox.shrink();
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Ma\'lumotlarni tanlang (ixtiyoriy):',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
+    // Initialize nested maps agar mavjud bo'lmasa
+    optionEduData[questionId] ??= {};
+    optionEduData[questionId]![optionId] ??= {};
+
+    var currentData = optionEduData[questionId]![optionId]!;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      padding: EdgeInsets.all(isDesktop ? 20 : 16),
+      decoration: BoxDecoration(
+        color: Colors.blue[50]?.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue[100]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Badge ko'rsatish
+          Wrap(
+            spacing: 8,
+            children: [
+              if (eduType == 'teacher')
+                _buildBadge('O\'qituvchi', Icons.person_rounded, Colors.green),
+              if (eduType == 'department')
+                _buildBadge('Kafedra', Icons.business_rounded, Colors.orange),
+              if (eduType == 'lesson')
+                _buildBadge('Fan', Icons.menu_book_rounded, Colors.blue),
+            ],
           ),
-        ),
-        const SizedBox(height: 16),
-
-        // Faculty Dropdown (Always show if dropdowns are needed)
-        FacultyDropdown(
-          value: selectedFaculty[questionId],
-          onChanged: (item) {
-            // Save scroll position before setState
-            final scrollPosition = _scrollController.hasClients
-                ? _scrollController.position.pixels
-                : 0.0;
-
-            setState(() {
-              if (item != null) {
-                selectedFaculty[questionId] = item;
-              } else {
-                selectedFaculty.remove(questionId);
-              }
-              selectedDepartment.remove(questionId);
-              selectedTeacher.remove(questionId);
-            });
-
-            // Restore scroll position after rebuild
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (_scrollController.hasClients) {
-                _scrollController.jumpTo(scrollPosition);
-              }
-            });
-          },
-        ),
-
-        if (selectedFaculty[questionId] != null) ...[
           const SizedBox(height: 16),
 
-          // Department Dropdown (Show if isDepartment OR isTeacher is true)
-          DepartmentDropdown(
-            facultyId: selectedFaculty[questionId]!['id'],
-            value: selectedDepartment[questionId],
-            onChanged: (item) {
-              // Save scroll position before setState
-              final scrollPosition = _scrollController.hasClients
-                  ? _scrollController.position.pixels
-                  : 0.0;
+          // TEACHER uchun: Faculty → Department → Teacher
+          if (eduType == 'teacher') ...[
+            FacultyDropdown(
+              value: currentData['faculty'],
+              onChanged: (item) {
+                _preserveScrollAndUpdate(() {
+                  currentData['faculty'] = item!;
+                  currentData.remove('department');
+                  currentData.remove('teacher');
+                });
+              },
+            ),
+            if (currentData['faculty'] != null) ...[
+              const SizedBox(height: 16),
+              DepartmentDropdown(
+                facultyId: currentData['faculty']!['id'],
+                value: currentData['department'],
+                onChanged: (item) {
+                  _preserveScrollAndUpdate(() {
+                    currentData['department'] = item!;
+                    currentData.remove('teacher');
+                  });
+                },
+              ),
+            ],
+            if (currentData['department'] != null) ...[
+              const SizedBox(height: 16),
+              TeacherDropdown(
+                departmentId: currentData['department']!['id'],
+                value: currentData['teacher'],
+                onChanged: (item) {
+                  _preserveScrollAndUpdate(() {
+                    currentData['teacher'] = item!;
+                  });
+                },
+              ),
+            ],
+          ],
 
-              setState(() {
-                if (item != null) {
-                  selectedDepartment[questionId] = item;
-                } else {
-                  selectedDepartment.remove(questionId);
-                }
-                selectedTeacher.remove(questionId);
-              });
+          // DEPARTMENT uchun: Faculty → Department
+          if (eduType == 'department') ...[
+            FacultyDropdown(
+              value: currentData['faculty'],
+              onChanged: (item) {
+                _preserveScrollAndUpdate(() {
+                  currentData['faculty'] = item!;
+                  currentData.remove('department');
+                });
+              },
+            ),
+            if (currentData['faculty'] != null) ...[
+              const SizedBox(height: 16),
+              DepartmentDropdown(
+                facultyId: currentData['faculty']!['id'],
+                value: currentData['department'],
+                onChanged: (item) {
+                  _preserveScrollAndUpdate(() {
+                    currentData['department'] = item!;
+                  });
+                },
+              ),
+            ],
+          ],
 
-              // Restore scroll position after rebuild
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (_scrollController.hasClients) {
-                  _scrollController.jumpTo(scrollPosition);
-                }
-              });
-            },
-          ),
+          // LESSON uchun: Faculty → Subject
+          if (eduType == 'lesson') ...[
+            FacultyDropdown(
+              value: currentData['faculty'],
+              onChanged: (item) {
+                _preserveScrollAndUpdate(() {
+                  currentData['faculty'] = item!;
+                  currentData.remove('lesson');
+                });
+              },
+            ),
+            if (currentData['faculty'] != null) ...[
+              const SizedBox(height: 16),
+              LessonDropdown(
+                facultyId: currentData['faculty']!['id'],
+                value: currentData['lesson'],
+                onChanged: (item) {
+                  _preserveScrollAndUpdate(() {
+                    currentData['lesson'] = item!;
+                  });
+                },
+              ),
+            ],
+          ],
         ],
-
-        // Teacher Dropdown (Only show if isTeacher is true AND department is selected)
-        if (showTeacherDropdown && selectedDepartment[questionId] != null) ...[
-          const SizedBox(height: 16),
-          TeacherDropdown(
-            departmentId: selectedDepartment[questionId]!['id'],
-            value: selectedTeacher[questionId],
-            onChanged: (item) {
-              // Save scroll position before setState
-              final scrollPosition = _scrollController.hasClients
-                  ? _scrollController.position.pixels
-                  : 0.0;
-
-              setState(() {
-                if (item != null) {
-                  selectedTeacher[questionId] = item;
-                } else {
-                  selectedTeacher.remove(questionId);
-                }
-              });
-
-              // Restore scroll position after rebuild
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (_scrollController.hasClients) {
-                  _scrollController.jumpTo(scrollPosition);
-                }
-              });
-            },
-          ),
-        ],
-      ],
+      ),
     );
   }
 
+  // Scroll pozitsiyasini saqlash
+  void _preserveScrollAndUpdate(VoidCallback updateFunction) {
+    final scrollPosition = _scrollController.hasClients
+        ? _scrollController.position.pixels
+        : 0.0;
+
+    setState(() {
+      updateFunction();
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(scrollPosition);
+      }
+    });
+  }
+
   Widget buildSingleChoice(question, bool isDesktop) {
-    if (question.optionsList == null || question.optionsList!.isEmpty) {
+    if (question.options == null || question.options!.isEmpty) {
       return _buildEmptyState("Variantlar topilmadi");
     }
+
+    int questionId = question.id?.toInt() ?? 0;
 
     return Container(
       decoration: BoxDecoration(
@@ -885,40 +1003,70 @@ class _SurveyPageState extends State<SurveyPage> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
-        children: question.optionsList!.map<Widget>((option) {
-          bool isSelected = answers[question.id?.toInt()] == option.id?.toInt();
-          return Container(
-            margin: const EdgeInsets.only(bottom: 2),
-            decoration: BoxDecoration(
-              color: isSelected ? Colors.blue[50] : Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isSelected ? Colors.blue[300]! : Colors.grey[200]!,
-                width: isSelected ? 2 : 1,
-              ),
-            ),
-            child: RadioListTile<int>(
-              title: Text(
-                option.text ?? '',
-                style: TextStyle(
-                  fontSize: isDesktop ? 15 : 14,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? Colors.blue[700] : Colors.grey[800],
+        children: question.options!.map<Widget>((option) {
+          int optionId = option.id?.toInt() ?? 0;
+          bool isSelected = answers[questionId] == optionId;
+
+          return Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(bottom: 2),
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.blue[50] : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected ? Colors.blue[300]! : Colors.grey[200]!,
+                    width: isSelected ? 2 : 1,
+                  ),
+                ),
+                child: RadioListTile<int>(
+                  title: Text(
+                    option.text ?? '',
+                    style: TextStyle(
+                      fontSize: isDesktop ? 15 : 14,
+                      fontWeight:
+                      isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isSelected ? Colors.blue[700] : Colors.grey[800],
+                    ),
+                  ),
+                  value: optionId,
+                  groupValue: answers[questionId],
+                  onChanged: (value) {
+                    // Oldingi tanlovning child questionlarini o'chiramiz
+                    if (answers[questionId] != null) {
+                      var previousOption = question.options!.firstWhere(
+                            (opt) => opt.id?.toInt() == answers[questionId],
+                        orElse: () => null,
+                      );
+                      if (previousOption != null) {
+                        _handleOptionSelection(previousOption, false);
+                      }
+                    }
+
+                    setState(() {
+                      answers[questionId] = value;
+                    });
+
+                    // Yangi tanlovning child questionlarini qo'shamiz
+                    _handleOptionSelection(option, true);
+                  },
+                  activeColor: Colors.blue[600],
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: isDesktop ? 20 : 16,
+                    vertical: 4,
+                  ),
                 ),
               ),
-              value: option.id?.toInt() ?? 0,
-              groupValue: answers[question.id?.toInt()],
-              onChanged: (value) {
-                setState(() {
-                  answers[question.id?.toInt()] = value;
-                });
-              },
-              activeColor: Colors.blue[600],
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: isDesktop ? 20 : 16,
-                vertical: 4,
-              ),
-            ),
+              // Dropdown agar kerak bo'lsa
+              if (isSelected)
+                buildDropdownForOption(
+                  question,
+                  option,
+                  questionId,
+                  optionId,
+                  isDesktop,
+                ),
+            ],
           );
         }).toList(),
       ),
@@ -926,12 +1074,12 @@ class _SurveyPageState extends State<SurveyPage> {
   }
 
   Widget buildMultipleChoice(question, bool isDesktop) {
-    if (question.optionsList == null || question.optionsList!.isEmpty) {
+    if (question.options == null || question.options!.isEmpty) {
       return _buildEmptyState("Variantlar topilmadi");
     }
 
-    List<int> selectedOptions =
-        (answers[question.id?.toInt()] as List<int>?) ?? [];
+    int questionId = question.id?.toInt() ?? 0;
+    List<int> selectedOptions = (answers[questionId] as List<int>?) ?? [];
 
     return Container(
       decoration: BoxDecoration(
@@ -939,47 +1087,67 @@ class _SurveyPageState extends State<SurveyPage> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
-        children: question.optionsList!.map<Widget>((option) {
-          bool isSelected = selectedOptions.contains(option.id?.toInt());
-          return Container(
-            margin: const EdgeInsets.only(bottom: 2),
-            decoration: BoxDecoration(
-              color: isSelected ? Colors.green[50] : Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isSelected ? Colors.green[300]! : Colors.grey[200]!,
-                width: isSelected ? 2 : 1,
-              ),
-            ),
-            child: CheckboxListTile(
-              title: Text(
-                option.text ?? '',
-                style: TextStyle(
-                  fontSize: isDesktop ? 15 : 14,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? Colors.green[700] : Colors.grey[800],
+        children: question.options!.map<Widget>((option) {
+          int optionId = option.id?.toInt() ?? 0;
+          bool isSelected = selectedOptions.contains(optionId);
+
+          return Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(bottom: 2),
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.green[50] : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected ? Colors.green[300]! : Colors.grey[200]!,
+                    width: isSelected ? 2 : 1,
+                  ),
+                ),
+                child: CheckboxListTile(
+                  title: Text(
+                    option.text ?? '',
+                    style: TextStyle(
+                      fontSize: isDesktop ? 15 : 14,
+                      fontWeight:
+                      isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isSelected ? Colors.green[700] : Colors.grey[800],
+                    ),
+                  ),
+                  value: isSelected,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      List<int> updatedList = List.from(selectedOptions);
+                      if (value == true) {
+                        updatedList.add(optionId);
+                        _handleOptionSelection(option, true);
+                      } else {
+                        updatedList.remove(optionId);
+                        // Agar option o'chirilsa, uning edu_data ham o'chirilsin
+                        optionEduData[questionId]?.remove(optionId);
+                        _handleOptionSelection(option, false);
+                      }
+                      answers[questionId] = updatedList;
+                    });
+                  },
+                  activeColor: Colors.green[600],
+                  checkColor: Colors.white,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: isDesktop ? 20 : 16,
+                    vertical: 4,
+                  ),
+                  controlAffinity: ListTileControlAffinity.leading,
                 ),
               ),
-              value: isSelected,
-              onChanged: (bool? value) {
-                setState(() {
-                  List<int> updatedList = List.from(selectedOptions);
-                  if (value == true) {
-                    updatedList.add(option.id?.toInt() ?? 0);
-                  } else {
-                    updatedList.remove(option.id?.toInt());
-                  }
-                  answers[question.id?.toInt()] = updatedList;
-                });
-              },
-              activeColor: Colors.green[600],
-              checkColor: Colors.white,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: isDesktop ? 20 : 16,
-                vertical: 4,
-              ),
-              controlAffinity: ListTileControlAffinity.leading,
-            ),
+              // Dropdown agar kerak bo'lsa
+              if (isSelected)
+                buildDropdownForOption(
+                  question,
+                  option,
+                  questionId,
+                  optionId,
+                  isDesktop,
+                ),
+            ],
           );
         }).toList(),
       ),
@@ -1039,67 +1207,125 @@ class _SurveyPageState extends State<SurveyPage> {
     );
   }
 
+  // YANGI SUBMIT JSON YARATISH
   Map<String, dynamic> _buildSubmitJson(SurveyProvider provider) {
     List<Map<String, dynamic>> answersList = [];
 
-    provider.survey?.questions?.forEach((question) {
+    // Faqat displayedQuestions dagi savollar uchun javob yuboramiz
+    for (var question in displayedQuestions) {
       int questionId = question.id?.toInt() ?? 0;
       Map<String, dynamic> answerData = {"question": questionId};
 
-      // Add answer based on question type
-      if (question.questionType == 'single') {
-        if (answers[questionId] != null) {
-          answerData["option"] = answers[questionId];
-        }
-      } else if (question.questionType == 'multiple') {
-        if (answers[questionId] != null && answers[questionId] is List) {
-          answerData["options"] = answers[questionId];
-        }
-      } else if (question.questionType == 'text') {
+      // TEXT type uchun
+      if (question.questionType == 'text') {
         if (answers[questionId] != null &&
             answers[questionId].toString().trim().isNotEmpty) {
           answerData["text_answer"] = answers[questionId];
         }
       }
+      // SINGLE yoki MULTIPLE uchun
+      else {
+        List<Map<String, dynamic>> selectedOptionsList = [];
 
-      if (question.options.first.eduType=='teacher' && selectedTeacher[questionId] != null) {
-        answerData["teacher_name"] = selectedTeacher[questionId]!['name'];
-        answerData["teacher_id"] = selectedTeacher[questionId]!['id']
-            .toString();
-      }
+        if (question.questionType == 'single') {
+          // Single choice
+          if (answers[questionId] != null) {
+            int selectedOptionId = answers[questionId];
+            var optionMap = _buildOptionWithEduItems(
+              questionId,
+              selectedOptionId,
+              question,
+            );
+            if (optionMap != null) {
+              selectedOptionsList.add(optionMap);
+            }
+          }
+        } else if (question.questionType == 'multiple') {
+          // Multiple choice
+          List<int> selectedOptions = (answers[questionId] as List<int>?) ?? [];
+          for (int optionId in selectedOptions) {
+            var optionMap = _buildOptionWithEduItems(
+              questionId,
+              optionId,
+              question,
+            );
+            if (optionMap != null) {
+              selectedOptionsList.add(optionMap);
+            }
+          }
+        }
 
-      // Add department info ONLY if selected
-      if ((question.options.first.eduType=='teacher') &&
-          selectedDepartment[questionId] != null) {
-        answerData["department_name"] = selectedDepartment[questionId]!['name'];
-        answerData["department_id"] = selectedDepartment[questionId]!['id']
-            .toString();
+        if (selectedOptionsList.isNotEmpty) {
+          answerData["selected_options"] = selectedOptionsList;
+        }
       }
 
       answersList.add(answerData);
-    });
+    }
+
     return {"device_id": _deviceId ?? 'unknown_device', "answers": answersList};
+  }
+
+  // Option va uning edu_items ni yaratish
+  Map<String, dynamic>? _buildOptionWithEduItems(
+      int questionId,
+      int optionId,
+      question,
+      ) {
+    Map<String, dynamic> optionMap = {"option": optionId};
+
+    // Edu ma'lumotlarni olish
+    var eduData = optionEduData[questionId]?[optionId];
+
+    if (eduData != null && eduData.isNotEmpty) {
+      // Optionning edu_type ni topish
+      var option = question.options?.firstWhere(
+            (opt) => opt.id?.toInt() == optionId,
+        orElse: () => null,
+      );
+
+      String eduType = option?.eduType ?? 'none';
+      List<Map<String, String>> eduItems = [];
+
+      if (eduType == 'teacher' && eduData['teacher'] != null) {
+        eduItems.add({
+          "edu_id": eduData['teacher']!['id'].toString(),
+          "edu_text": eduData['teacher']!['name'].toString(),
+        });
+      } else if (eduType == 'department' && eduData['department'] != null) {
+        eduItems.add({
+          "edu_id": eduData['department']!['id'].toString(),
+          "edu_text": eduData['department']!['name'].toString(),
+        });
+      } else if (eduType == 'lesson' && eduData['lesson'] != null) {
+        eduItems.add({
+          "edu_id": eduData['lesson']!['id'].toString(),
+          "edu_text": eduData['lesson']!['name'].toString(),
+        });
+      }
+
+      if (eduItems.isNotEmpty) {
+        optionMap["edu_items"] = eduItems;
+      }
+    }
+
+    return optionMap;
   }
 
   Future<void> _submitSurvey(SurveyProvider provider) async {
     List<String> errors = [];
-    print(answers);
-    // Validate required questions
-    provider.survey?.questions?.forEach((question) {
-      print(question.isRequired);
-      if (question.isRequired!) {
+
+    // Faqat displayedQuestions dagi majburiy savollarni tekshiramiz
+    for (var question in displayedQuestions) {
+      if (question.isRequired == true) {
         int qId = question.id?.toInt() ?? 0;
         var answer = answers[qId];
 
         if (question.questionType == 'text') {
-          print("ishladi 1");
-
           if (answer == null || answer.toString().trim().isEmpty) {
-            print("ishlad 2i");
             errors.add(question.text ?? 'Savol');
           }
         } else if (question.questionType == 'multiple') {
-          // For multiple choice, check if list exists and has items
           if (answer == null || (answer is List && answer.isEmpty)) {
             errors.add(question.text ?? 'Savol');
           }
@@ -1109,7 +1335,7 @@ class _SurveyPageState extends State<SurveyPage> {
           }
         }
       }
-    });
+    }
 
     if (errors.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1138,10 +1364,6 @@ class _SurveyPageState extends State<SurveyPage> {
 
     final jsonData = _buildSubmitJson(provider);
     final jsonString = jsonEncode(jsonData);
-
-    print('=== SUBMIT JSON ===');
-    print(jsonString);
-    print('==================');
 
     var response = await provider.submit(jsonString, widget.session_code);
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:survey_samdu/admin/page/StaticsPage.dart';
 import 'package:survey_samdu/models/surveys_model.dart';
+
 import '../provider/AdminProvider.dart';
 
 class SurveyListPage extends StatefulWidget {
@@ -35,7 +36,6 @@ class _SurveyListPageState extends State<SurveyListPage> {
         title: const Text(
           'So\'rovnomalar',
           style: TextStyle(
-
             color: Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: 24,
@@ -52,10 +52,9 @@ class _SurveyListPageState extends State<SurveyListPage> {
       body: provider.loading
           ? _buildLoadingState()
           : provider.surveysModel.dataListList == null ||
-          provider.surveysModel.dataListList!.isEmpty
+                provider.surveysModel.dataListList!.isEmpty
           ? _buildEmptyState()
           : _buildSurveyList(provider),
-
     );
   }
 
@@ -87,11 +86,7 @@ class _SurveyListPageState extends State<SurveyListPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.poll_outlined,
-            size: 120,
-            color: Colors.grey[300],
-          ),
+          Icon(Icons.poll_outlined, size: 120, color: Colors.grey[300]),
           const SizedBox(height: 24),
           Text(
             'So\'rovnomalar topilmadi',
@@ -101,7 +96,6 @@ class _SurveyListPageState extends State<SurveyListPage> {
               color: Colors.grey[700],
             ),
           ),
-
         ],
       ),
     );
@@ -122,7 +116,7 @@ class _SurveyListPageState extends State<SurveyListPage> {
     );
   }
 
-  Widget _buildSurveyCard(DataList item, int index) {
+  Widget _buildSurveyCard(SurveyData item, int index) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(milliseconds: 300 + (index * 100)),
@@ -154,7 +148,12 @@ class _SurveyListPageState extends State<SurveyListPage> {
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (builder)=>StatisticsPage(index:item.id!.toInt())));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (builder) => StatisticsPage(index: item.id!.toInt()),
+                ),
+              );
             },
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -168,10 +167,7 @@ class _SurveyListPageState extends State<SurveyListPage> {
                         height: 48,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [
-                              Colors.blue[400]!,
-                              Colors.blue[700]!,
-                            ],
+                            colors: [Colors.blue[400]!, Colors.blue[700]!],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -204,7 +200,8 @@ class _SurveyListPageState extends State<SurveyListPage> {
                       ),
                     ],
                   ),
-                  if (item.description != null && item.description!.isNotEmpty) ...[
+                  if (item.description != null &&
+                      item.description!.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     Text(
                       item.description!,
@@ -218,7 +215,6 @@ class _SurveyListPageState extends State<SurveyListPage> {
                     ),
                   ],
                   const SizedBox(height: 16),
-
                 ],
               ),
             ),
@@ -227,5 +223,4 @@ class _SurveyListPageState extends State<SurveyListPage> {
       ),
     );
   }
-
 }

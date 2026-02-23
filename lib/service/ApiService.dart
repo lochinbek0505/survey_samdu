@@ -3,10 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:survey_samdu/models/departament_model.dart';
 import 'package:survey_samdu/models/employee_model.dart';
 import 'package:survey_samdu/models/groups_model.dart';
+import 'package:survey_samdu/models/question_group_model.dart';
+import 'package:survey_samdu/models/question_model.dart';
 import 'package:survey_samdu/models/session_list_model.dart';
 import 'package:survey_samdu/models/session_model.dart';
+import 'package:survey_samdu/models/subjects_model.dart';
 import 'package:survey_samdu/models/survey_model.dart';
 import 'package:survey_samdu/models/token_model.dart';
+import 'package:survey_samdu/models/users_model.dart';
 
 import '../admin/page/LoginPage.dart';
 import '../admin/service/CacheService.dart';
@@ -202,7 +206,7 @@ class ApiService {
   Future<TokenModel> login(data) async {
     try {
       final response = await _dio.post(
-        "token/",
+        "login/",
         data: data,
         options: Options(headers: {'Accept': 'application/json'}),
       );
@@ -210,6 +214,178 @@ class ApiService {
     } catch (e) {
       print(e);
       return TokenModel();
+    }
+  }
+
+  Future<List<QuestionGroupModel>?> getSurveysGroup(token) async {
+    try {
+      final response = await _dio.get(
+        "question-groups/",
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      print(response);
+      return QuestionGroupModel.listFromJson(response.data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        return null;
+      }
+
+      return null;
+    } catch (e) {
+      print('Error: $e');
+      return null;
+    }
+  }
+  Future<bool> deleteQueston(token, id) async {
+    try {
+      final response = await _dio.delete(
+        "questions/$id/",
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      return response.statusCode == 204;
+    } catch (e) {
+      print(e);
+      return false;
+    }
+  }
+
+  Future<bool> deleteSurveyGroup(token, id) async {
+    try {
+      final response = await _dio.delete(
+        "question-groups/$id/",
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      return response.statusCode == 204;
+    } catch (e) {
+      print(e);
+      return false;
+    }
+  }
+
+  Future<QuestionGroupModel?> createSurveyGroup(data, token) async {
+    try {
+      final response = await _dio.post(
+        "question-groups/",
+        data: data,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      return QuestionGroupModel.fromJson(response.data);
+    } catch (e) {
+      print(e);
+      return null;
+    }
+  }
+
+  Future<QuestionGroupModel?> updateSurveyGroup(data, token, id) async {
+    try {
+      final response = await _dio.put(
+        "question-groups/$id/",
+        data: data,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      return QuestionGroupModel.fromJson(response.data);
+    } catch (e) {
+      print(e);
+      return null;
+    }
+  }
+
+  Future<SurveyData> updateSurvey(data, token, id) async {
+    try {
+      final response = await _dio.put(
+        "surveys/$id/",
+        data: data,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      return SurveyData.fromJson(response.data);
+    } catch (e) {
+      print(e);
+      return SurveyData();
+    }
+  }
+
+  Future<List<QuestionModel>?> getQuestions(token, id) async {
+    try {
+      final response = await _dio.get(
+        "questions/?survey=$id",
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      return QuestionModel.listFromJson(response.data);
+    } catch (e) {
+      print(e);
+      return null;
+    }
+  }
+
+  Future<bool> deleteSurvey(token, id) async {
+    try {
+      final response = await _dio.delete(
+        "surveys/$id/",
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      return response.statusCode == 204;
+    } catch (e) {
+      print(e);
+      return false;
+    }
+  }
+
+  Future<SurveyData> createSurvey(data, token) async {
+    try {
+      final response = await _dio.post(
+        "surveys/",
+        data: data,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      return SurveyData.fromJson(response.data);
+    } catch (e) {
+      print(e);
+      return SurveyData();
     }
   }
 
@@ -303,6 +479,96 @@ class ApiService {
       );
     } catch (e) {
       print(e);
+    }
+  }
+
+  Future<UsersModel?> getUsers(token) async {
+    print("${baseUrl}users/");
+    try {
+      final response = await _dio.get(
+        "users/",
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      print(response);
+      return UsersModel.fromJson(response.data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        return null;
+      }
+
+      return null;
+    } catch (e) {
+      print('Error: $e');
+      return null;
+    }
+  }
+
+  Future<SubjectsModel?> getSubjects(link) async {
+    print("${baseUrl}subjects/");
+    try {
+      final response = await _dio.get(
+        "subjects/$link",
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      print(response);
+      return SubjectsModel.fromJson(response.data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        return null;
+      }
+
+      return null;
+    } catch (e) {
+      print('Error: $e');
+      return null;
+    }
+  }
+
+  Future<bool> addQustion(token, data) async {
+    try {
+      final response = await _dio.post(
+        "questions/",
+        data: data,
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+      return response.statusCode == 201;
+    } catch (e) {
+      print(e);
+      return false;
+    }
+  }
+
+  Future<bool> updateQustion(token, data, num id) async {
+    try {
+      print(data);
+      print("questions/$id/");
+      final response = await _dio.put(
+        "questions/$id/",
+        data: data,
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
     }
   }
 }

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart'; // URL strategy uchun
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:survey_samdu/admin/page/StaticsPage.dart';
+import 'package:survey_samdu/admin/provider/GroupProvider.dart';
+import 'package:survey_samdu/admin/provider/QuestionsProvider.dart';
 import 'package:survey_samdu/user/pages/SurveyPage.dart';
 import 'package:survey_samdu/user/providers/SessionProvider.dart';
 
@@ -18,6 +19,8 @@ void main() {
         ChangeNotifierProvider(create: (_) => SurveyProvider()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
         ChangeNotifierProvider(create: (_) => SurveysProvider()),
+        ChangeNotifierProvider(create: (_) => QuestionsProvider()),
+        ChangeNotifierProvider(create: (_) => GroupsProvider()),
       ],
       child: MyApp(),
     ),
@@ -148,7 +151,7 @@ class SurveyCodePage extends StatelessWidget {
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:  Colors.blue,
+                            backgroundColor: Colors.blue,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(15),

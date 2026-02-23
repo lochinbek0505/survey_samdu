@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:survey_samdu/models/employee_model.dart';
 import 'package:survey_samdu/models/session_model.dart';
+import 'package:survey_samdu/models/subjects_model.dart';
 import 'package:survey_samdu/models/survey_model.dart';
 import 'package:survey_samdu/service/ApiService.dart';
 
@@ -18,6 +19,8 @@ class SurveyProvider with ChangeNotifier {
 
   SurveyModel? _survey ;
   SurveyModel? get survey => _survey;
+
+
 
   final ApiService _apiService = ApiService();
   Future<void> getSurvey(dynamic code) async {
@@ -97,6 +100,21 @@ class SurveyProvider with ChangeNotifier {
 
     try {
       var result = await _apiService.getEmployee(departamentId,link);
+      return result;
+    }catch (e) {
+      print("Employee olishda xatolik: $e");
+      return null;
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
+  }
+  Future<SubjectsModel?> getSubjects(link)async{
+    _loading = true;
+    notifyListeners();
+
+    try {
+      var result = await _apiService.getSubjects(link);
       return result;
     }catch (e) {
       print("Employee olishda xatolik: $e");

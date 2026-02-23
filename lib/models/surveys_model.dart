@@ -1,9 +1,9 @@
-class DataList {
+class SurveyData {
   num? id;
   String? title;
   String? description;
   num? owner;
-  DataList({this.id, this.title, this.description});
+  SurveyData({this.id, this.title, this.description, this.owner});
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
@@ -15,7 +15,7 @@ class DataList {
     return map;
   }
 
-  DataList.fromJson(dynamic json){
+  SurveyData.fromJson(dynamic json){
     id = json["id"];
     title = json["title"];
     owner = json["owner"];
@@ -24,7 +24,7 @@ class DataList {
 }
 
 class SurveysModel {
-  List<DataList>? dataListList;
+  List<SurveyData>? dataListList;
 
   SurveysModel({this.dataListList});
 
@@ -40,7 +40,7 @@ class SurveysModel {
     if (json != null) {
       dataListList = [];
       json.forEach((v) {
-        dataListList?.add(DataList.fromJson(v));
+        dataListList?.add(SurveyData.fromJson(v));
       });
     }
   }

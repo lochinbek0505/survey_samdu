@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:survey_samdu/admin/page/GroupsPage.dart';
 import 'package:survey_samdu/admin/page/SessionsPage.dart';
 import 'package:survey_samdu/admin/provider/AdminProvider.dart';
 
 import 'LoginPage.dart';
-import 'StaticsPage.dart';
 import 'SurveyListPage.dart';
 import 'SurveysPage.dart';
 
@@ -16,9 +16,6 @@ class AdminPage extends StatefulWidget {
 }
 
 class _AdminPageState extends State<AdminPage> {
-
-
-
   @override
   Widget build(BuildContext context) {
     final adminProvider = Provider.of<AdminProvider>(context, listen: true);
@@ -39,11 +36,9 @@ class ChosePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA), // Zamonaviy och kulrang fon
       appBar: AppBar(
-
         title: const Text(
-
           "Admin Boshqaruvi",
-          style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         centerTitle: true,
         elevation: 0,
@@ -108,24 +103,53 @@ class ChosePage extends StatelessWidget {
                       color: Colors.green, // Yashilroq rang
                       onTap: () {
                         // Navigation kodini shu yerga qo'ying
-                        Navigator.push(context, MaterialPageRoute(builder: (builder) => SurveyListPage(),));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (builder) => SurveyListPage(),
+                          ),
+                        );
                       },
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
-                SizedBox(
-                  width: size.width*0.7,
-                  child: _buildMenuButton(
-                    context,
-                    label: "So'rovnoma yaratish",
-                    icon: Icons.question_mark,
-                    color: Colors.red, // Yashilroq rang
-                    onTap: () {
-                      // Navigation kodini shu yerga qo'ying
-                      Navigator.push(context, MaterialPageRoute(builder: (builder) => SurveysPage(),));
-                    },
-                  ),
+                Flex(
+                  direction: isMobile ? Axis.vertical : Axis.horizontal,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildMenuButton(
+                        context,
+                        label: "So'rovnoma yaratish",
+                        icon: Icons.question_mark,
+                        color: Colors.red, // Yashilroq rang
+                        onTap: () {
+                          // Navigation kodini shu yerga qo'ying
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (builder) => SurveysPage(),
+                            ),
+                          );
+                        },
+                      ),
+                    _buildMenuButton(
+                      context,
+                      label: "Savol guruhini yaratish",
+                      icon: Icons.question_answer,
+                      color: Colors.yellow, // Yashilroq rang
+                      onTap: () {
+                        // Navigation kodini shu yerga qo'ying
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (builder) => GroupsPage(),
+                          ),
+                        );
+                      },
+                    )
+
+                  ],
                 ),
               ],
             ),

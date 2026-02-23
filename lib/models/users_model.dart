@@ -1,4 +1,4 @@
-class DataList {
+class UserData {
   num? id;
   String? username;
   String? fullName;
@@ -6,7 +6,7 @@ class DataList {
   String? role;
   bool? isSuperuser;
 
-  DataList(
+  UserData(
       {this.id, this.username, this.fullName, this.departmentName, this.role, this.isSuperuser});
 
   Map<String, dynamic> toJson() {
@@ -20,7 +20,7 @@ class DataList {
     return map;
   }
 
-  DataList.fromJson(dynamic json){
+  UserData.fromJson(dynamic json){
     id = json["id"];
     username = json["username"];
     fullName = json["full_name"];
@@ -31,7 +31,7 @@ class DataList {
 }
 
 class UsersModel {
-  List<DataList>? dataListList;
+  List<UserData>? dataListList;
 
   UsersModel({this.dataListList});
 
@@ -47,7 +47,7 @@ class UsersModel {
     if (json != null) {
       dataListList = [];
       json.forEach((v) {
-        dataListList?.add(DataList.fromJson(v));
+        dataListList?.add(UserData.fromJson(v));
       });
     }
   }

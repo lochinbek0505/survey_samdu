@@ -1,4 +1,4 @@
-import 'question_model.dart';
+import 'package:survey_samdu/models/question_model.dart';
 
 class SurveyModel {
   final int id;
@@ -6,7 +6,6 @@ class SurveyModel {
   final String description;
   final int owner;
   final DateTime? createdAt;
-
   final List<QuestionModel> questions;
 
   SurveyModel({
@@ -14,7 +13,7 @@ class SurveyModel {
     required this.title,
     required this.description,
     required this.owner,
-    required this.createdAt,
+    this.createdAt,
     required this.questions,
   });
 
@@ -27,7 +26,11 @@ class SurveyModel {
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'])
           : null,
-      questions: QuestionModel.listFromJson(json['questions']),
+      questions: json['questions'] != null
+          ? (json['questions'] as List)
+          .map((e) => QuestionModel.fromJson(e))
+          .toList()
+          : [],
     );
   }
 
@@ -39,13 +42,6 @@ class SurveyModel {
     "created_at": createdAt?.toIso8601String(),
     "questions": questions.map((e) => e.toJson()).toList(),
   };
-
-  static List<SurveyModel> listFromJson(List<dynamic>? data) {
-    if (data == null) return [];
-    return data
-        .map((e) => SurveyModel.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
 
   SurveyModel copyWith({
     int? id,
