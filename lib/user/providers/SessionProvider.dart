@@ -109,7 +109,7 @@ class SurveyProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-  Future<SubjectsModel?> getSubjects(link)async{
+  Future<SubjectsModel?> getSubjects([link])async{
     _loading = true;
     notifyListeners();
 

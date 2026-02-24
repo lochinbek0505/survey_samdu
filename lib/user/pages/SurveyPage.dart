@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:universal_html/html.dart' as html;
 
+import '../../models/question_model.dart';
 import '../providers/SessionProvider.dart';
 import '../widgets/DepartmentDropdown.dart';
 import '../widgets/FacultyDropdown.dart';
@@ -30,8 +31,7 @@ class _SurveyPageState extends State<SurveyPage> {
   // Format: {questionId: {optionId: {faculty, department, teacher/lesson}}}
   Map<int, Map<int, Map<String, Map<String, dynamic>>>> optionEduData = {};
 
-  // Dinamik child questionlar ro'yxati
-  List<dynamic> displayedQuestions = [];
+  List<QuestionModel> displayedQuestions = [];
 
   String? _deviceId;
   bool _isSurveyCompleted = false;
@@ -50,26 +50,27 @@ class _SurveyPageState extends State<SurveyPage> {
       provider
           .getSession(widget.session_code)
           .then((_) {
-        if (provider.session?.survey != null) {
-          provider.getSurvey(provider.session!.code).then((_) {
-            _initializeDisplayedQuestions(provider);
-          });
-        }
-      })
+            if (provider.session?.survey != null) {
+              provider.getSurvey(provider.session!.code).then((_) {
+                _initializeDisplayedQuestions(provider);
+              });
+            }
+          })
           .catchError((error) {
-        setState(() {
-          _hasError = true;
-        });
-      });
+            setState(() {
+              _hasError = true;
+            });
+          });
     });
   }
 
   void _initializeDisplayedQuestions(SurveyProvider provider) {
     setState(() {
       // Faqat parent_option == null bo'lgan (asosiy) savollarni qo'shamiz
-      displayedQuestions = provider.survey?.questions
-          ?.where((q) => q.parentOption == null)
-          .toList() ??
+      displayedQuestions =
+          provider.survey?.questions
+              ?.where((q) => q.parentOption == null)
+              .toList() ??
           [];
     });
   }
@@ -164,7 +165,7 @@ class _SurveyPageState extends State<SurveyPage> {
             if (!displayedQuestions.any((q) => q.id == childQuestion.id)) {
               // Parent question indexini topamiz
               int parentIndex = displayedQuestions.indexWhere(
-                    (q) => q.options?.any((opt) => opt.id == option.id) ?? false,
+                (q) => q.options?.any((opt) => opt.id == option.id) ?? false,
               );
               if (parentIndex != -1) {
                 // Parent questiondan keyin qo'shamiz
@@ -380,7 +381,7 @@ class _SurveyPageState extends State<SurveyPage> {
                         displayedQuestions.clear();
                         _isSurveyCompleted = true;
                         html.window.localStorage[widget.session_code] =
-                        'completed';
+                            'completed';
                       });
                     },
                     style: ElevatedButton.styleFrom(
@@ -552,7 +553,7 @@ class _SurveyPageState extends State<SurveyPage> {
                   if (displayedQuestions.isNotEmpty)
                     ...groupIds.map((groupId) {
                       List<dynamic> questionsInGroup =
-                      groupedQuestions[groupId]!;
+                          groupedQuestions[groupId]!;
                       String groupName =
                           questionsInGroup.first.groupName ?? 'Umumiy';
 
@@ -657,9 +658,11 @@ class _SurveyPageState extends State<SurveyPage> {
                       ],
                     ),
                     child: ElevatedButton(
-                      onPressed: _isSurveyCompleted
-                          ? null
-                          : () {
+                      onPressed: () {
+                        if (_isSurveyCompleted) {
+                          return;
+                        }
+
                         _submitSurvey(provider);
                       },
                       style: ElevatedButton.styleFrom(
@@ -682,7 +685,7 @@ class _SurveyPageState extends State<SurveyPage> {
                           ),
                           SizedBox(width: 12),
                           Text(
-                            'Tasdiqlab yuborish',
+                            'Tasdiqlab yuborish 123',
                             style: TextStyle(
                               fontSize: 18,
                               color: Colors.white,
@@ -802,7 +805,7 @@ class _SurveyPageState extends State<SurveyPage> {
             else if (question.questionType == 'multiple')
               buildMultipleChoice(question, isDesktop)
             else if (question.questionType == 'text')
-                buildTextInput(question, isDesktop),
+              buildTextInput(question, isDesktop),
           ],
         ),
       ),
@@ -837,12 +840,12 @@ class _SurveyPageState extends State<SurveyPage> {
 
   // EDU_TYPE uchun dropdown yaratish
   Widget buildDropdownForOption(
-      question,
-      option,
-      int questionId,
-      int optionId,
-      bool isDesktop,
-      ) {
+    question,
+    option,
+    int questionId,
+    int optionId,
+    bool isDesktop,
+  ) {
     String eduType = option.eduType ?? 'none';
 
     if (eduType == 'none') {
@@ -1024,8 +1027,9 @@ class _SurveyPageState extends State<SurveyPage> {
                     option.text ?? '',
                     style: TextStyle(
                       fontSize: isDesktop ? 15 : 14,
-                      fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                       color: isSelected ? Colors.blue[700] : Colors.grey[800],
                     ),
                   ),
@@ -1035,10 +1039,17 @@ class _SurveyPageState extends State<SurveyPage> {
                     // Oldingi tanlovning child questionlarini o'chiramiz
                     if (answers[questionId] != null) {
                       var previousOption = question.options!.firstWhere(
-                            (opt) => opt.id?.toInt() == answers[questionId],
-                        orElse: () => null,
+                        (opt) => opt.id?.toInt() == answers[questionId],
+                        orElse: () => OptionModel(
+                          id: 0,
+                          text: '',
+                          order: 0,
+                          question: 0,
+                          eduType: 'none',
+                          childQuestions: [],
+                        ),
                       );
-                      if (previousOption != null) {
+                      if (previousOption.id != 0) {
                         _handleOptionSelection(previousOption, false);
                       }
                     }
@@ -1108,8 +1119,9 @@ class _SurveyPageState extends State<SurveyPage> {
                     option.text ?? '',
                     style: TextStyle(
                       fontSize: isDesktop ? 15 : 14,
-                      fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                       color: isSelected ? Colors.green[700] : Colors.grey[800],
                     ),
                   ),
@@ -1209,80 +1221,288 @@ class _SurveyPageState extends State<SurveyPage> {
 
   // YANGI SUBMIT JSON YARATISH
   Map<String, dynamic> _buildSubmitJson(SurveyProvider provider) {
+    print('📦 JSON yaratish boshlandi...');
+
+    // Final JSON struktura
+    Map<String, dynamic> finalJson = {
+      "device_id": _deviceId ?? 'unknown_device',
+      "answers": _createAnswersList(),
+    };
+
+    print('✅ JSON tayyor: ${jsonEncode(finalJson)}');
+    return finalJson;
+  } // Option va uning edu_items ni yaratish
+
+  List<Map<String, dynamic>> _createAnswersList() {
     List<Map<String, dynamic>> answersList = [];
 
-    // Faqat displayedQuestions dagi savollar uchun javob yuboramiz
+    print(
+      '🔄 ${displayedQuestions.length} ta savol uchun javoblar tekshirilmoqda...',
+    );
+
     for (var question in displayedQuestions) {
       int questionId = question.id?.toInt() ?? 0;
-      Map<String, dynamic> answerData = {"question": questionId};
+      String questionType = question.questionType ?? 'single';
 
-      // TEXT type uchun
-      if (question.questionType == 'text') {
-        if (answers[questionId] != null &&
-            answers[questionId].toString().trim().isNotEmpty) {
-          answerData["text_answer"] = answers[questionId];
-        }
+      print('  ❓ Savol #$questionId ($questionType)');
+
+      // Har bir savol uchun javobni yaratish
+      Map<String, dynamic>? answerData = _createAnswerForQuestion(
+        questionId: questionId,
+        questionType: questionType,
+        question: question,
+      );
+
+      // Agar javob mavjud bo'lsa, ro'yxatga qo'shamiz
+      if (answerData != null) {
+        answersList.add(answerData);
+        print('    ✓ Javob qo\'shildi');
+      } else {
+        print('    ⚠ Javob topilmadi (ixtiyoriy savol bo\'lishi mumkin)');
       }
-      // SINGLE yoki MULTIPLE uchun
-      else {
-        List<Map<String, dynamic>> selectedOptionsList = [];
-
-        if (question.questionType == 'single') {
-          // Single choice
-          if (answers[questionId] != null) {
-            int selectedOptionId = answers[questionId];
-            var optionMap = _buildOptionWithEduItems(
-              questionId,
-              selectedOptionId,
-              question,
-            );
-            if (optionMap != null) {
-              selectedOptionsList.add(optionMap);
-            }
-          }
-        } else if (question.questionType == 'multiple') {
-          // Multiple choice
-          List<int> selectedOptions = (answers[questionId] as List<int>?) ?? [];
-          for (int optionId in selectedOptions) {
-            var optionMap = _buildOptionWithEduItems(
-              questionId,
-              optionId,
-              question,
-            );
-            if (optionMap != null) {
-              selectedOptionsList.add(optionMap);
-            }
-          }
-        }
-
-        if (selectedOptionsList.isNotEmpty) {
-          answerData["selected_options"] = selectedOptionsList;
-        }
-      }
-
-      answersList.add(answerData);
     }
 
-    return {"device_id": _deviceId ?? 'unknown_device', "answers": answersList};
+    print('📊 Jami ${answersList.length} ta javob yig\'ildi');
+    return answersList;
   }
 
-  // Option va uning edu_items ni yaratish
+  Map<String, dynamic>? _createAnswerForQuestion({
+    required int questionId,
+    required String questionType,
+    required dynamic question,
+  }) {
+    // Asosiy javob strukturasi
+    Map<String, dynamic> answerData = {"question": questionId};
+
+    // Savol turiga qarab javobni qo'shamiz
+    switch (questionType) {
+      case 'text':
+        return _handleTextAnswer(answerData, questionId);
+
+      case 'single':
+        return _handleSingleChoiceAnswer(answerData, questionId, question);
+
+      case 'multiple':
+        return _handleMultipleChoiceAnswer(answerData, questionId, question);
+
+      default:
+        print('    ⚠ Noma\'lum savol turi: $questionType');
+        return null;
+    }
+  }
+
+  Map<String, dynamic>? _handleTextAnswer(
+    Map<String, dynamic> answerData,
+    int questionId,
+  ) {
+    var textAnswer = answers[questionId];
+
+    // Agar matn kiritilgan bo'lsa
+    if (textAnswer != null && textAnswer.toString().trim().isNotEmpty) {
+      answerData["text_answer"] = textAnswer.toString().trim();
+      print(
+        '    📝 Matn javobi: "${textAnswer.toString().substring(0, 20)}..."',
+      );
+      return answerData;
+    }
+
+    return null; // Javob yo'q
+  }
+
+  Map<String, dynamic>? _handleSingleChoiceAnswer(
+    Map<String, dynamic> answerData,
+    int questionId,
+    dynamic question,
+  ) {
+    var selectedOptionId = answers[questionId];
+
+    // Agar variant tanlangan bo'lsa
+    if (selectedOptionId != null && selectedOptionId is int) {
+      print(' 🔘 Tanlangan variant: $selectedOptionId');
+
+      // Variant ma'lumotlarini olish
+      var optionData = _buildOptionData(
+        questionId: questionId,
+        optionId: selectedOptionId,
+        question: question,
+      );
+
+      if (optionData != null) {
+        answerData["selected_options"] = [optionData];
+        return answerData;
+      }
+    }
+
+    return null; // Javob yo'q
+  }
+
+  Map<String, dynamic>? _handleMultipleChoiceAnswer(
+    Map<String, dynamic> answerData,
+    int questionId,
+    dynamic question,
+  ) {
+    var selectedOptionIds = answers[questionId];
+
+    // Agar variantlar tanlangan bo'lsa
+    if (selectedOptionIds != null && selectedOptionIds is List<int>) {
+      print('    ☑️  Tanlangan variantlar soni: ${selectedOptionIds.length}');
+
+      List<Map<String, dynamic>> selectedOptions = [];
+
+      // Har bir tanlangan variant uchun
+      for (int optionId in selectedOptionIds) {
+        var optionData = _buildOptionData(
+          questionId: questionId,
+          optionId: optionId,
+          question: question,
+        );
+
+        if (optionData != null) {
+          selectedOptions.add(optionData);
+          print('      ✓ Variant #$optionId qo\'shildi');
+        }
+      }
+
+      if (selectedOptions.isNotEmpty) {
+        answerData["selected_options"] = selectedOptions;
+        return answerData;
+      }
+    }
+
+    return null; // Javob yo'q
+  }
+
+  Map<String, dynamic>? _buildOptionData({
+    required int questionId,
+    required int optionId,
+    required dynamic question,
+  }) {
+    // Asosiy variant strukturasi
+    Map<String, dynamic> optionData = {"option": optionId};
+
+    // EDU ma'lumotlarini qo'shish
+    var eduItems = _getEduItemsForOption(
+      questionId: questionId,
+      optionId: optionId,
+      question: question,
+    );
+
+    if (eduItems != null && eduItems.isNotEmpty) {
+      optionData["edu_items"] = eduItems;
+      print('        📚 EDU ma\'lumotlar qo\'shildi: ${eduItems.length} ta');
+    }
+
+    return optionData;
+  }
+
+  List<Map<String, String>>? _getEduItemsForOption({
+    required int questionId,
+    required int optionId,
+    required QuestionModel question,
+  }) {
+    // Bu variant uchun saqlangan EDU ma'lumotlarini tekshirish
+    var savedEduData = optionEduData[questionId]?[optionId];
+
+    if (savedEduData == null || savedEduData.isEmpty) {
+      return null; // EDU ma'lumot yo'q
+    }
+
+    print(question);
+    print(optionId);
+
+    // Option obyektini topish
+    var option;
+
+    question.options.forEach((opt) {
+      if (opt.id?.toInt() == optionId) {
+        option = opt;
+      }
+    });
+    if (option == null) {
+      print('⚠ Variant topilmadi: #$optionId');
+      return null;
+    }
+
+    String eduType = option.eduType ?? 'none';
+    print('        🏷️  EDU turi: $eduType');
+
+    // EDU turiga qarab ma'lumotni qaytarish
+    return _extractEduItemsByType(eduType, savedEduData);
+  }
+
+  List<Map<String, String>>? _extractEduItemsByType(
+    String eduType,
+    Map<String, dynamic> savedData,
+  ) {
+    List<Map<String, String>> eduItems = [];
+
+    switch (eduType) {
+      case 'teacher':
+        // O'qituvchi ma'lumotini qo'shish
+        if (savedData['teacher'] != null) {
+          eduItems.add({
+            "edu_id": savedData['teacher']['id'].toString(),
+            "edu_text": savedData['teacher']['name'].toString(),
+          });
+          print('          👤 O\'qituvchi: ${savedData['teacher']['name']}');
+        }
+        break;
+
+      case 'department':
+        // Kafedra ma'lumotini qo'shish
+        if (savedData['department'] != null) {
+          eduItems.add({
+            "edu_id": savedData['department']['id'].toString(),
+            "edu_text": savedData['department']['name'].toString(),
+          });
+          print('          🏢 Kafedra: ${savedData['department']['name']}');
+        }
+        break;
+
+      case 'lesson':
+        // Fan ma'lumotini qo'shish
+        if (savedData['lesson'] != null) {
+          eduItems.add({
+            "edu_id": savedData['lesson']['id'].toString(),
+            "edu_text": savedData['lesson']['name'].toString(),
+          });
+          print('          📖 Fan: ${savedData['lesson']['name']}');
+        }
+        break;
+
+      case 'none':
+        return null; // EDU ma'lumot kerak emas
+
+      default:
+        print('          ⚠ Noma\'lum EDU turi: $eduType');
+        return null;
+    }
+
+    return eduItems.isNotEmpty ? eduItems : null;
+  }
+
   Map<String, dynamic>? _buildOptionWithEduItems(
-      int questionId,
-      int optionId,
-      question,
-      ) {
+    int questionId,
+    int optionId,
+    question,
+  ) {
     Map<String, dynamic> optionMap = {"option": optionId};
 
-    // Edu ma'lumotlarni olish
+    print(optionMap);
+
     var eduData = optionEduData[questionId]?[optionId];
 
     if (eduData != null && eduData.isNotEmpty) {
       // Optionning edu_type ni topish
-      var option = question.options?.firstWhere(
-            (opt) => opt.id?.toInt() == optionId,
-        orElse: () => null,
-      );
+
+      print(question.toString());
+      print(optionId);
+      var option = question.options?.firstWhere((opt) {
+        print(opt.id);
+        print(optionId);
+
+        return opt.id?.toInt() == optionId;
+      }, orElse: () => null);
 
       String eduType = option?.eduType ?? 'none';
       List<Map<String, String>> eduItems = [];
@@ -1313,82 +1533,107 @@ class _SurveyPageState extends State<SurveyPage> {
   }
 
   Future<void> _submitSurvey(SurveyProvider provider) async {
-    List<String> errors = [];
+    print('\n🚀 So\'rovnoma yuborish boshlandi...\n');
 
-    // Faqat displayedQuestions dagi majburiy savollarni tekshiramiz
-    for (var question in displayedQuestions) {
-      if (question.isRequired == true) {
-        int qId = question.id?.toInt() ?? 0;
-        var answer = answers[qId];
-
-        if (question.questionType == 'text') {
-          if (answer == null || answer.toString().trim().isEmpty) {
-            errors.add(question.text ?? 'Savol');
-          }
-        } else if (question.questionType == 'multiple') {
-          if (answer == null || (answer is List && answer.isEmpty)) {
-            errors.add(question.text ?? 'Savol');
-          }
-        } else {
-          if (answer == null) {
-            errors.add(question.text ?? 'Savol');
-          }
-        }
-      }
-    }
+    // 1. Validatsiya
+    List<String> errors = _validateRequiredQuestions();
 
     if (errors.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: const [
-              Icon(Icons.error_outline, color: Colors.white),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Iltimos, barcha majburiy savollarni to\'ldiring',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.red[600],
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+      print('❌ Validatsiya xatosi: ${errors.length} ta savol to\'ldirilmagan');
+      _showValidationError();
       return;
     }
 
+    print('✅ Validatsiya muvaffaqiyatli\n');
+
+    // 2. JSON yaratish
     final jsonData = _buildSubmitJson(provider);
     final jsonString = jsonEncode(jsonData);
 
+    print('\n📤 Yuborilayotgan JSON:');
+    print(jsonString);
+    print('\n');
+
+    // 3. Serverga yuborish
     var response = await provider.submit(jsonString, widget.session_code);
 
     if (response) {
+      print('✅ So\'rovnoma muvaffaqiyatli yuborildi!');
       _showSuccessDialog();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: const [
-              Icon(Icons.error_outline, color: Colors.white),
-              SizedBox(width: 12),
-              Text(
-                'So\'rovnoma yuborishda xatolik!',
+      print('❌ Server xatosi!');
+      _showErrorSnackbar();
+    }
+  }
+
+  List<String> _validateRequiredQuestions() {
+    List<String> errors = [];
+
+    for (var question in displayedQuestions) {
+      if (question.isRequired != true) continue;
+
+      int qId = question.id?.toInt() ?? 0;
+      var answer = answers[qId];
+
+      bool isInvalid = false;
+
+      if (question.questionType == 'text') {
+        isInvalid = answer == null || answer.toString().trim().isEmpty;
+      } else if (question.questionType == 'multiple') {
+        isInvalid = answer == null || (answer is List && answer.isEmpty);
+      } else {
+        isInvalid = answer == null;
+      }
+
+      if (isInvalid) {
+        errors.add(question.text ?? 'Savol');
+      }
+    }
+
+    return errors;
+  }
+
+  /// Validatsiya xatosi haqida xabar
+  void _showValidationError() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: const [
+            Icon(Icons.error_outline, color: Colors.white),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Iltimos, barcha majburiy savollarni to\'ldiring',
                 style: TextStyle(fontWeight: FontWeight.w500),
               ),
-            ],
-          ),
-          backgroundColor: Colors.red[600],
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+            ),
+          ],
         ),
-      );
-    }
+        backgroundColor: Colors.red[600],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  /// Server xatosi haqida xabar
+  void _showErrorSnackbar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: const [
+            Icon(Icons.error_outline, color: Colors.white),
+            SizedBox(width: 12),
+            Text(
+              'So\'rovnoma yuborishda xatolik!',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.red[600],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
 }
