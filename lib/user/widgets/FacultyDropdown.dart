@@ -6,8 +6,8 @@ import 'DropdownContainer.dart';
 import 'SearchDialog.dart';
 
 class FacultyDropdown extends StatelessWidget {
-  final Map<String, dynamic>? value;
-  final Function(Map<String, dynamic>?) onChanged;
+  final List<Map<String, dynamic>>? value; // Single → List
+  final Function(List<Map<String, dynamic>>?) onChanged; // Single → List
 
   const FacultyDropdown({Key? key, this.value, required this.onChanged})
       : super(key: key);
@@ -16,10 +16,15 @@ class FacultyDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     final faculties = AppConsts.fakultetlar.dataListList ?? [];
 
+    // Display selected count or placeholder
+    final displayText = (value != null && value!.isNotEmpty)
+        ? '${value!.length} ta fakultet tanlandi'
+        : null;
+
     return DropdownContainer(
       label: 'Fakultet',
       icon: Icons.account_balance_rounded,
-      value: value?['name'],
+      value: displayText,
       onTap: () => _showFacultyDialog(context, faculties),
     );
   }
@@ -33,9 +38,9 @@ class FacultyDropdown extends StatelessWidget {
         items: faculties
             .map((f) => {'id': f.id, 'name': f.name ?? ''})
             .toList(),
-        selectedValue: value?['name'],
-        onSelected: (item) {
-          onChanged(item);
+        selectedValues: value, // Changed from selectedValue
+        onSelected: (items) {
+          onChanged(items);
           Navigator.pop(context);
         },
       ),

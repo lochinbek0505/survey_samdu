@@ -27,9 +27,10 @@ class _SurveyPageState extends State<SurveyPage> {
   // Asosiy javoblar: {questionId: value}
   Map<int, dynamic> answers = {};
 
-  // Har bir option uchun edu ma'lumotlari
-  // Format: {questionId: {optionId: {faculty, department, teacher/lesson}}}
-  Map<int, Map<int, Map<String, Map<String, dynamic>>>> optionEduData = {};
+  // Har bir option uchun edu ma'lumotlari (MULTI-SELECT)
+  // Format: {questionId: {optionId: {faculty: [], department: [], teacher/lesson: []}}}
+  Map<int, Map<int, Map<String, List<Map<String, dynamic>>>>> optionEduData =
+      {};
 
   List<QuestionModel> displayedQuestions = [];
 
@@ -685,7 +686,7 @@ class _SurveyPageState extends State<SurveyPage> {
                           ),
                           SizedBox(width: 12),
                           Text(
-                            'Tasdiqlab yuborish 123',
+                            'Tasdiqlab yuborish',
                             style: TextStyle(
                               fontSize: 18,
                               color: Colors.white,
@@ -838,7 +839,7 @@ class _SurveyPageState extends State<SurveyPage> {
     );
   }
 
-  // EDU_TYPE uchun dropdown yaratish
+  // EDU_TYPE uchun MULTI-SELECT dropdown yaratish
   Widget buildDropdownForOption(
     question,
     option,
@@ -852,11 +853,17 @@ class _SurveyPageState extends State<SurveyPage> {
       return const SizedBox.shrink();
     }
 
-    // Initialize nested maps agar mavjud bo'lmasa
+    // Initialize nested maps agar mavjud bo'lmasa (LISTLAR bilan)
     optionEduData[questionId] ??= {};
     optionEduData[questionId]![optionId] ??= {};
 
     var currentData = optionEduData[questionId]![optionId]!;
+
+    // Agar listlar mavjud bo'lmasa, bo'sh list yaratamiz
+    currentData['faculty'] ??= [];
+    currentData['department'] ??= [];
+    currentData['teacher'] ??= [];
+    currentData['lesson'] ??= [];
 
     return Container(
       margin: const EdgeInsets.only(top: 16),
@@ -883,89 +890,89 @@ class _SurveyPageState extends State<SurveyPage> {
           ),
           const SizedBox(height: 16),
 
-          // TEACHER uchun: Faculty → Department → Teacher
+          // TEACHER uchun: Faculty (multi) → Department (multi) → Teacher (multi)
           if (eduType == 'teacher') ...[
             FacultyDropdown(
-              value: currentData['faculty'],
-              onChanged: (item) {
+              value: currentData['faculty'] as List<Map<String, dynamic>>?,
+              onChanged: (items) {
                 _preserveScrollAndUpdate(() {
-                  currentData['faculty'] = item!;
-                  currentData.remove('department');
-                  currentData.remove('teacher');
+                  currentData['faculty'] = items ?? [];
+                  currentData['department'] = [];
+                  currentData['teacher'] = [];
                 });
               },
             ),
-            if (currentData['faculty'] != null) ...[
+            if ((currentData['faculty'] as List).isNotEmpty) ...[
               const SizedBox(height: 16),
               DepartmentDropdown(
-                facultyId: currentData['faculty']!['id'],
-                value: currentData['department'],
-                onChanged: (item) {
+                facultyId: (currentData['faculty'] as List).first['id'],
+                value: currentData['department'] as List<Map<String, dynamic>>?,
+                onChanged: (items) {
                   _preserveScrollAndUpdate(() {
-                    currentData['department'] = item!;
-                    currentData.remove('teacher');
+                    currentData['department'] = items ?? [];
+                    currentData['teacher'] = [];
                   });
                 },
               ),
             ],
-            if (currentData['department'] != null) ...[
+            if ((currentData['department'] as List).isNotEmpty) ...[
               const SizedBox(height: 16),
               TeacherDropdown(
-                departmentId: currentData['department']!['id'],
-                value: currentData['teacher'],
-                onChanged: (item) {
+                departmentId: (currentData['department'] as List).first['id'],
+                value: currentData['teacher'] as List<Map<String, dynamic>>?,
+                onChanged: (items) {
                   _preserveScrollAndUpdate(() {
-                    currentData['teacher'] = item!;
+                    currentData['teacher'] = items ?? [];
                   });
                 },
               ),
             ],
           ],
 
-          // DEPARTMENT uchun: Faculty → Department
+          // DEPARTMENT uchun: Faculty (multi) → Department (multi)
           if (eduType == 'department') ...[
             FacultyDropdown(
-              value: currentData['faculty'],
-              onChanged: (item) {
+              value: currentData['faculty'] as List<Map<String, dynamic>>?,
+              onChanged: (items) {
                 _preserveScrollAndUpdate(() {
-                  currentData['faculty'] = item!;
-                  currentData.remove('department');
+                  currentData['faculty'] = items ?? [];
+                  currentData['department'] = [];
                 });
               },
             ),
-            if (currentData['faculty'] != null) ...[
+            if ((currentData['faculty'] as List).isNotEmpty) ...[
               const SizedBox(height: 16),
               DepartmentDropdown(
-                facultyId: currentData['faculty']!['id'],
-                value: currentData['department'],
-                onChanged: (item) {
+                facultyId: (currentData['faculty'] as List).first['id'],
+                value: currentData['department'] as List<Map<String, dynamic>>?,
+                onChanged: (items) {
                   _preserveScrollAndUpdate(() {
-                    currentData['department'] = item!;
+                    currentData['department'] = items ?? [];
                   });
                 },
               ),
             ],
           ],
 
-          // LESSON uchun: Faculty → Subject
+          // LESSON uchun: Faculty (multi) → Subject (multi)
           if (eduType == 'lesson') ...[
             FacultyDropdown(
-              value: currentData['faculty'],
-              onChanged: (item) {
+              value: currentData['faculty'] as List<Map<String, dynamic>>?,
+              onChanged: (items) {
                 _preserveScrollAndUpdate(() {
-                  currentData['faculty'] = item!;
-                  currentData.remove('lesson');
+                  currentData['faculty'] = items ?? [];
+                  currentData['lesson'] = [];
                 });
               },
             ),
-            if (currentData['faculty'] != null) ...[
+            if ((currentData['faculty'] as List).isNotEmpty) ...[
               const SizedBox(height: 16),
               LessonDropdown(
-                facultyId: currentData['faculty']!['id'],
-                value: currentData['lesson'],
-                onChanged: (item) {
+                facultyId: (currentData['faculty'] as List).first['id'],
+                value: currentData['lesson'] as List<Map<String, dynamic>>?,
+                onChanged: (items) {
                   _preserveScrollAndUpdate(() {
-                    currentData['lesson'] = item!;
+                    currentData['lesson'] = items ?? [];
                   });
                 },
               ),
@@ -1219,11 +1226,10 @@ class _SurveyPageState extends State<SurveyPage> {
     );
   }
 
-  // YANGI SUBMIT JSON YARATISH
+  // YANGI SUBMIT JSON YARATISH (MULTI-SELECT)
   Map<String, dynamic> _buildSubmitJson(SurveyProvider provider) {
     print('📦 JSON yaratish boshlandi...');
 
-    // Final JSON struktura
     Map<String, dynamic> finalJson = {
       "device_id": _deviceId ?? 'unknown_device',
       "answers": _createAnswersList(),
@@ -1231,7 +1237,7 @@ class _SurveyPageState extends State<SurveyPage> {
 
     print('✅ JSON tayyor: ${jsonEncode(finalJson)}');
     return finalJson;
-  } // Option va uning edu_items ni yaratish
+  }
 
   List<Map<String, dynamic>> _createAnswersList() {
     List<Map<String, dynamic>> answersList = [];
@@ -1246,19 +1252,17 @@ class _SurveyPageState extends State<SurveyPage> {
 
       print('  ❓ Savol #$questionId ($questionType)');
 
-      // Har bir savol uchun javobni yaratish
       Map<String, dynamic>? answerData = _createAnswerForQuestion(
         questionId: questionId,
         questionType: questionType,
         question: question,
       );
 
-      // Agar javob mavjud bo'lsa, ro'yxatga qo'shamiz
       if (answerData != null) {
         answersList.add(answerData);
         print('    ✓ Javob qo\'shildi');
       } else {
-        print('    ⚠ Javob topilmadi (ixtiyoriy savol bo\'lishi mumkin)');
+        print('    ⚠ Javob topilmadi');
       }
     }
 
@@ -1271,10 +1275,8 @@ class _SurveyPageState extends State<SurveyPage> {
     required String questionType,
     required dynamic question,
   }) {
-    // Asosiy javob strukturasi
     Map<String, dynamic> answerData = {"question": questionId};
 
-    // Savol turiga qarab javobni qo'shamiz
     switch (questionType) {
       case 'text':
         return _handleTextAnswer(answerData, questionId);
@@ -1297,16 +1299,15 @@ class _SurveyPageState extends State<SurveyPage> {
   ) {
     var textAnswer = answers[questionId];
 
-    // Agar matn kiritilgan bo'lsa
     if (textAnswer != null && textAnswer.toString().trim().isNotEmpty) {
       answerData["text_answer"] = textAnswer.toString().trim();
       print(
-        '    📝 Matn javobi: "${textAnswer.toString().substring(0, 20)}..."',
+        '    📝 Matn javobi: "${textAnswer.toString().substring(0, textAnswer.toString().length > 20 ? 20 : textAnswer.toString().length)}..."',
       );
       return answerData;
     }
 
-    return null; // Javob yo'q
+    return null;
   }
 
   Map<String, dynamic>? _handleSingleChoiceAnswer(
@@ -1316,11 +1317,9 @@ class _SurveyPageState extends State<SurveyPage> {
   ) {
     var selectedOptionId = answers[questionId];
 
-    // Agar variant tanlangan bo'lsa
     if (selectedOptionId != null && selectedOptionId is int) {
-      print(' 🔘 Tanlangan variant: $selectedOptionId');
+      print('    🔘 Tanlangan variant: $selectedOptionId');
 
-      // Variant ma'lumotlarini olish
       var optionData = _buildOptionData(
         questionId: questionId,
         optionId: selectedOptionId,
@@ -1333,7 +1332,7 @@ class _SurveyPageState extends State<SurveyPage> {
       }
     }
 
-    return null; // Javob yo'q
+    return null;
   }
 
   Map<String, dynamic>? _handleMultipleChoiceAnswer(
@@ -1343,13 +1342,11 @@ class _SurveyPageState extends State<SurveyPage> {
   ) {
     var selectedOptionIds = answers[questionId];
 
-    // Agar variantlar tanlangan bo'lsa
     if (selectedOptionIds != null && selectedOptionIds is List<int>) {
       print('    ☑️  Tanlangan variantlar soni: ${selectedOptionIds.length}');
 
       List<Map<String, dynamic>> selectedOptions = [];
 
-      // Har bir tanlangan variant uchun
       for (int optionId in selectedOptionIds) {
         var optionData = _buildOptionData(
           questionId: questionId,
@@ -1369,7 +1366,7 @@ class _SurveyPageState extends State<SurveyPage> {
       }
     }
 
-    return null; // Javob yo'q
+    return null;
   }
 
   Map<String, dynamic>? _buildOptionData({
@@ -1377,10 +1374,8 @@ class _SurveyPageState extends State<SurveyPage> {
     required int optionId,
     required dynamic question,
   }) {
-    // Asosiy variant strukturasi
     Map<String, dynamic> optionData = {"option": optionId};
 
-    // EDU ma'lumotlarini qo'shish
     var eduItems = _getEduItemsForOption(
       questionId: questionId,
       optionId: optionId,
@@ -1395,83 +1390,93 @@ class _SurveyPageState extends State<SurveyPage> {
     return optionData;
   }
 
+  // MULTI-SELECT EDU ma'lumotlarini olish
   List<Map<String, String>>? _getEduItemsForOption({
     required int questionId,
     required int optionId,
     required QuestionModel question,
   }) {
-    // Bu variant uchun saqlangan EDU ma'lumotlarini tekshirish
     var savedEduData = optionEduData[questionId]?[optionId];
 
     if (savedEduData == null || savedEduData.isEmpty) {
-      return null; // EDU ma'lumot yo'q
+      return null;
     }
 
-    print(question);
-    print(optionId);
+    var option = question.options?.firstWhere(
+      (opt) => opt.id?.toInt() == optionId,
+      orElse: () => OptionModel(
+        id: 0,
+        text: '',
+        order: 0,
+        question: 0,
+        eduType: 'none',
+        childQuestions: [],
+      ),
+    );
 
-    // Option obyektini topish
-    var option;
+    // Agar option topilmasa, null tekshirish
+    if (option?.id == null) {
+      print('        ⚠ Variant topilmadi: #$optionId');
+      return null;
+    }
 
-    question.options.forEach((opt) {
-      if (opt.id?.toInt() == optionId) {
-        option = opt;
-      }
-    });
     if (option == null) {
-      print('⚠ Variant topilmadi: #$optionId');
+      print('        ⚠ Variant topilmadi: #$optionId');
       return null;
     }
 
     String eduType = option.eduType ?? 'none';
     print('        🏷️  EDU turi: $eduType');
 
-    // EDU turiga qarab ma'lumotni qaytarish
     return _extractEduItemsByType(eduType, savedEduData);
   }
 
+  // MULTI-SELECT uchun EDU ma'lumotlarini extract qilish
   List<Map<String, String>>? _extractEduItemsByType(
     String eduType,
-    Map<String, dynamic> savedData,
+    Map<String, List<Map<String, dynamic>>> savedData,
   ) {
     List<Map<String, String>> eduItems = [];
 
     switch (eduType) {
       case 'teacher':
-        // O'qituvchi ma'lumotini qo'shish
-        if (savedData['teacher'] != null) {
+        // Har bir tanlangan o'qituvchi uchun
+        List<Map<String, dynamic>> teachers = savedData['teacher'] ?? [];
+        for (var teacher in teachers) {
           eduItems.add({
-            "edu_id": savedData['teacher']['id'].toString(),
-            "edu_text": savedData['teacher']['name'].toString(),
+            "edu_id": teacher['id'].toString(),
+            "edu_text": teacher['name'].toString(),
           });
-          print('          👤 O\'qituvchi: ${savedData['teacher']['name']}');
+          print('          👤 O\'qituvchi: ${teacher['name']}');
         }
         break;
 
       case 'department':
-        // Kafedra ma'lumotini qo'shish
-        if (savedData['department'] != null) {
+        // Har bir tanlangan kafedra uchun
+        List<Map<String, dynamic>> departments = savedData['department'] ?? [];
+        for (var dept in departments) {
           eduItems.add({
-            "edu_id": savedData['department']['id'].toString(),
-            "edu_text": savedData['department']['name'].toString(),
+            "edu_id": dept['id'].toString(),
+            "edu_text": dept['name'].toString(),
           });
-          print('          🏢 Kafedra: ${savedData['department']['name']}');
+          print('          🏢 Kafedra: ${dept['name']}');
         }
         break;
 
       case 'lesson':
-        // Fan ma'lumotini qo'shish
-        if (savedData['lesson'] != null) {
+        // Har bir tanlangan fan uchun
+        List<Map<String, dynamic>> lessons = savedData['lesson'] ?? [];
+        for (var lesson in lessons) {
           eduItems.add({
-            "edu_id": savedData['lesson']['id'].toString(),
-            "edu_text": savedData['lesson']['name'].toString(),
+            "edu_id": lesson['id'].toString(),
+            "edu_text": lesson['name'].toString(),
           });
-          print('          📖 Fan: ${savedData['lesson']['name']}');
+          print('          📖 Fan: ${lesson['name']}');
         }
         break;
 
       case 'none':
-        return null; // EDU ma'lumot kerak emas
+        return null;
 
       default:
         print('          ⚠ Noma\'lum EDU turi: $eduType');
@@ -1481,61 +1486,9 @@ class _SurveyPageState extends State<SurveyPage> {
     return eduItems.isNotEmpty ? eduItems : null;
   }
 
-  Map<String, dynamic>? _buildOptionWithEduItems(
-    int questionId,
-    int optionId,
-    question,
-  ) {
-    Map<String, dynamic> optionMap = {"option": optionId};
-
-    print(optionMap);
-
-    var eduData = optionEduData[questionId]?[optionId];
-
-    if (eduData != null && eduData.isNotEmpty) {
-      // Optionning edu_type ni topish
-
-      print(question.toString());
-      print(optionId);
-      var option = question.options?.firstWhere((opt) {
-        print(opt.id);
-        print(optionId);
-
-        return opt.id?.toInt() == optionId;
-      }, orElse: () => null);
-
-      String eduType = option?.eduType ?? 'none';
-      List<Map<String, String>> eduItems = [];
-
-      if (eduType == 'teacher' && eduData['teacher'] != null) {
-        eduItems.add({
-          "edu_id": eduData['teacher']!['id'].toString(),
-          "edu_text": eduData['teacher']!['name'].toString(),
-        });
-      } else if (eduType == 'department' && eduData['department'] != null) {
-        eduItems.add({
-          "edu_id": eduData['department']!['id'].toString(),
-          "edu_text": eduData['department']!['name'].toString(),
-        });
-      } else if (eduType == 'lesson' && eduData['lesson'] != null) {
-        eduItems.add({
-          "edu_id": eduData['lesson']!['id'].toString(),
-          "edu_text": eduData['lesson']!['name'].toString(),
-        });
-      }
-
-      if (eduItems.isNotEmpty) {
-        optionMap["edu_items"] = eduItems;
-      }
-    }
-
-    return optionMap;
-  }
-
   Future<void> _submitSurvey(SurveyProvider provider) async {
     print('\n🚀 So\'rovnoma yuborish boshlandi...\n');
 
-    // 1. Validatsiya
     List<String> errors = _validateRequiredQuestions();
 
     if (errors.isNotEmpty) {
@@ -1546,7 +1499,6 @@ class _SurveyPageState extends State<SurveyPage> {
 
     print('✅ Validatsiya muvaffaqiyatli\n');
 
-    // 2. JSON yaratish
     final jsonData = _buildSubmitJson(provider);
     final jsonString = jsonEncode(jsonData);
 
@@ -1554,7 +1506,6 @@ class _SurveyPageState extends State<SurveyPage> {
     print(jsonString);
     print('\n');
 
-    // 3. Serverga yuborish
     var response = await provider.submit(jsonString, widget.session_code);
 
     if (response) {
@@ -1593,7 +1544,6 @@ class _SurveyPageState extends State<SurveyPage> {
     return errors;
   }
 
-  /// Validatsiya xatosi haqida xabar
   void _showValidationError() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1616,7 +1566,6 @@ class _SurveyPageState extends State<SurveyPage> {
     );
   }
 
-  /// Server xatosi haqida xabar
   void _showErrorSnackbar() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

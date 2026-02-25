@@ -1,18 +1,17 @@
-
 import 'package:flutter/material.dart';
 
 class SearchDialog extends StatefulWidget {
   final String title;
   final IconData icon;
   final List<Map<String, dynamic>> items;
-  final String? selectedValue;
-  final Function(Map<String, dynamic>) onSelected;
+  final List<Map<String, dynamic>>? selectedValues; // Changed from String?
+  final Function(List<Map<String, dynamic>>) onSelected; // Changed to List
 
   const SearchDialog({
     required this.title,
     required this.icon,
     required this.items,
-    this.selectedValue,
+    this.selectedValues,
     required this.onSelected,
   });
 
@@ -23,11 +22,13 @@ class SearchDialog extends StatefulWidget {
 class _SearchDialogState extends State<SearchDialog> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _filteredItems = [];
+  late List<Map<String, dynamic>> _selectedItems;
 
   @override
   void initState() {
     super.initState();
     _filteredItems = widget.items;
+    _selectedItems = List.from(widget.selectedValues ?? []);
   }
 
   void _filterItems(String query) {
@@ -41,6 +42,20 @@ class _SearchDialogState extends State<SearchDialog> {
               item['name']!.toLowerCase().contains(query.toLowerCase()),
         )
             .toList();
+      }
+    });
+  }
+
+  bool _isSelected(Map<String, dynamic> item) {
+    return _selectedItems.any((s) => s['id'] == item['id']);
+  }
+
+  void _toggleSelection(Map<String, dynamic> item) {
+    setState(() {
+      if (_isSelected(item)) {
+        _selectedItems.removeWhere((s) => s['id'] == item['id']);
+      } else {
+        _selectedItems.add(item);
       }
     });
   }
@@ -104,6 +119,16 @@ class _SearchDialogState extends State<SearchDialog> {
               ),
             ),
 
+            // Selected count
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                '${_selectedItems.length} ta tanlandi',
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
+              ),
+            ),
+            const SizedBox(height: 8),
+
             // Items List
             Flexible(
               child: _filteredItems.isEmpty
@@ -130,9 +155,40 @@ class _SearchDialogState extends State<SearchDialog> {
                 itemCount: _filteredItems.length,
                 itemBuilder: (context, index) {
                   final item = _filteredItems[index];
-                  bool isSelected = widget.selectedValue == item['name'];
-                  return _buildListTile(item, isSelected);
+                  bool isSelected = _isSelected(item);
+                  return _buildCheckboxTile(item, isSelected);
                 },
+              ),
+            ),
+
+            // Action Buttons
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        side: BorderSide(color: Colors.grey[400]!),
+                      ),
+                      child: const Text('Bekor qilish'),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => widget.onSelected(_selectedItems),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        backgroundColor: Colors.blue[700],
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Saqlash'),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -141,18 +197,18 @@ class _SearchDialogState extends State<SearchDialog> {
     );
   }
 
-  Widget _buildListTile(Map<String, dynamic> item, bool isSelected) {
+  Widget _buildCheckboxTile(Map<String, dynamic> item, bool isSelected) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         color: isSelected ? Colors.blue[50] : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: isSelected ? Colors.blue[300]! : Colors.transparent,
-          width: 2,
+          color: isSelected ? Colors.blue[300]! : Colors.grey[200]!,
+          width: 1.5,
         ),
       ),
-      child: ListTile(
+      child: CheckboxListTile(
         title: Text(
           item['name']!,
           style: TextStyle(
@@ -160,10 +216,10 @@ class _SearchDialogState extends State<SearchDialog> {
             color: isSelected ? Colors.blue[700] : Colors.grey[800],
           ),
         ),
-        trailing: isSelected
-            ? Icon(Icons.check_circle, color: Colors.blue[700])
-            : null,
-        onTap: () => widget.onSelected(item),
+        value: isSelected,
+        onChanged: (_) => _toggleSelection(item),
+        activeColor: Colors.blue[700],
+        controlAffinity: ListTileControlAffinity.leading,
       ),
     );
   }

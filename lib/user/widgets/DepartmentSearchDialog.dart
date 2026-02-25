@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -6,12 +5,12 @@ import '../providers/SessionProvider.dart';
 
 class DepartmentSearchDialog extends StatefulWidget {
   final dynamic facultyId;
-  final String? selectedValue;
-  final Function(Map<String, dynamic>) onSelected;
+  final List<Map<String, dynamic>>? selectedValues; // Changed from String?
+  final Function(List<Map<String, dynamic>>) onSelected; // Changed to List
 
   const DepartmentSearchDialog({
     required this.facultyId,
-    this.selectedValue,
+    this.selectedValues,
     required this.onSelected,
   });
 
@@ -24,12 +23,14 @@ class _DepartmentSearchDialogState extends State<DepartmentSearchDialog> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _allDepartments = [];
   List<Map<String, dynamic>> _filteredDepartments = [];
+  late List<Map<String, dynamic>> _selectedDepartments;
   bool _isLoading = true;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    _selectedDepartments = List.from(widget.selectedValues ?? []);
     _loadDepartments();
   }
 
@@ -75,6 +76,20 @@ class _DepartmentSearchDialogState extends State<DepartmentSearchDialog> {
               dept['name']!.toLowerCase().contains(query.toLowerCase()),
         )
             .toList();
+      }
+    });
+  }
+
+  bool _isSelected(Map<String, dynamic> dept) {
+    return _selectedDepartments.any((s) => s['id'] == dept['id']);
+  }
+
+  void _toggleSelection(Map<String, dynamic> dept) {
+    setState(() {
+      if (_isSelected(dept)) {
+        _selectedDepartments.removeWhere((s) => s['id'] == dept['id']);
+      } else {
+        _selectedDepartments.add(dept);
       }
     });
   }
@@ -139,8 +154,52 @@ class _DepartmentSearchDialogState extends State<DepartmentSearchDialog> {
                 ),
               ),
 
+            // Selected count
+            if (!_isLoading && _errorMessage == null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  '${_selectedDepartments.length} ta tanlandi',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                ),
+              ),
+            if (!_isLoading && _errorMessage == null) const SizedBox(height: 8),
+
             // Content
             Flexible(child: _buildContent()),
+
+            // Action Buttons
+            if (!_isLoading && _errorMessage == null)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: BorderSide(color: Colors.grey[400]!),
+                        ),
+                        child: const Text('Bekor qilish'),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () =>
+                            widget.onSelected(_selectedDepartments),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          backgroundColor: Colors.orange[700],
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Saqlash'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
@@ -213,7 +272,7 @@ class _DepartmentSearchDialogState extends State<DepartmentSearchDialog> {
       itemCount: _filteredDepartments.length,
       itemBuilder: (context, index) {
         final dept = _filteredDepartments[index];
-        bool isSelected = widget.selectedValue == dept['name'];
+        bool isSelected = _isSelected(dept);
 
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -221,11 +280,11 @@ class _DepartmentSearchDialogState extends State<DepartmentSearchDialog> {
             color: isSelected ? Colors.orange[50] : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? Colors.orange[300]! : Colors.transparent,
-              width: 2,
+              color: isSelected ? Colors.orange[300]! : Colors.grey[200]!,
+              width: 1.5,
             ),
           ),
-          child: ListTile(
+          child: CheckboxListTile(
             title: Text(
               dept['name']!,
               style: TextStyle(
@@ -233,10 +292,10 @@ class _DepartmentSearchDialogState extends State<DepartmentSearchDialog> {
                 color: isSelected ? Colors.orange[700] : Colors.grey[800],
               ),
             ),
-            trailing: isSelected
-                ? Icon(Icons.check_circle, color: Colors.orange[700])
-                : null,
-            onTap: () => widget.onSelected(dept),
+            value: isSelected,
+            onChanged: (_) => _toggleSelection(dept),
+            activeColor: Colors.orange[700],
+            controlAffinity: ListTileControlAffinity.leading,
           ),
         );
       },

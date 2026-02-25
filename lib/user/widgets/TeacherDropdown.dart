@@ -5,8 +5,8 @@ import 'TeacherSearchDialogNew.dart';
 
 class TeacherDropdown extends StatelessWidget {
   final dynamic departmentId;
-  final Map<String, dynamic>? value;
-  final Function(Map<String, dynamic>?) onChanged;
+  final List<Map<String, dynamic>>? value; // Single → List
+  final Function(List<Map<String, dynamic>>?) onChanged; // Single → List
 
   const TeacherDropdown({
     Key? key,
@@ -17,10 +17,15 @@ class TeacherDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Display selected count or placeholder
+    final displayText = (value != null && value!.isNotEmpty)
+        ? '${value!.length} ta o\'qituvchi tanlandi'
+        : null;
+
     return DropdownContainer(
       label: 'O\'qituvchi',
       icon: Icons.person_rounded,
-      value: value?['name'],
+      value: displayText,
       onTap: () => _showTeacherDialog(context),
     );
   }
@@ -30,9 +35,9 @@ class TeacherDropdown extends StatelessWidget {
       context: context,
       builder: (dialogContext) => TeacherSearchDialogNew(
         departmentId: departmentId,
-        selectedValue: value?['name'],
-        onSelected: (item) {
-          onChanged(item);
+        selectedValues: value, // Changed from selectedValue
+        onSelected: (items) {
+          onChanged(items);
           Navigator.of(dialogContext).pop();
         },
       ),

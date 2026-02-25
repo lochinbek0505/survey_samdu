@@ -5,12 +5,12 @@ import '../providers/SessionProvider.dart';
 
 class TeacherSearchDialogNew extends StatefulWidget {
   final dynamic departmentId;
-  final String? selectedValue;
-  final Function(Map<String, dynamic>) onSelected;
+  final List<Map<String, dynamic>>? selectedValues; // Changed from String?
+  final Function(List<Map<String, dynamic>>) onSelected; // Changed to List
 
   const TeacherSearchDialogNew({
     required this.departmentId,
-    this.selectedValue,
+    this.selectedValues,
     required this.onSelected,
   });
 
@@ -24,6 +24,7 @@ class _TeacherSearchDialogNewState extends State<TeacherSearchDialogNew> {
   final ScrollController _scrollController = ScrollController();
 
   List<Map<String, dynamic>> _teachers = [];
+  late List<Map<String, dynamic>> _selectedTeachers;
   int _currentPage = 1;
   int _totalPages = 1;
   bool _isLoading = true;
@@ -34,6 +35,7 @@ class _TeacherSearchDialogNewState extends State<TeacherSearchDialogNew> {
   @override
   void initState() {
     super.initState();
+    _selectedTeachers = List.from(widget.selectedValues ?? []);
     _loadTeachers();
     _scrollController.addListener(_onScroll);
   }
@@ -153,6 +155,20 @@ class _TeacherSearchDialogNewState extends State<TeacherSearchDialogNew> {
     _loadTeachers(isNewSearch: true);
   }
 
+  bool _isSelected(Map<String, dynamic> teacher) {
+    return _selectedTeachers.any((s) => s['id'] == teacher['id']);
+  }
+
+  void _toggleSelection(Map<String, dynamic> teacher) {
+    setState(() {
+      if (_isSelected(teacher)) {
+        _selectedTeachers.removeWhere((s) => s['id'] == teacher['id']);
+      } else {
+        _selectedTeachers.add(teacher);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -213,8 +229,51 @@ class _TeacherSearchDialogNewState extends State<TeacherSearchDialogNew> {
                 ),
               ),
 
+            // Selected count
+            if (!_isLoading || _teachers.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  '${_selectedTeachers.length} ta tanlandi',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                ),
+              ),
+            if (!_isLoading || _teachers.isNotEmpty) const SizedBox(height: 8),
+
             // Content
             Flexible(child: _buildContent()),
+
+            // Action Buttons
+            if (!_isLoading && _errorMessage == null)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: BorderSide(color: Colors.grey[400]!),
+                        ),
+                        child: const Text('Bekor qilish'),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => widget.onSelected(_selectedTeachers),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          backgroundColor: Colors.blue[700],
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Saqlash'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
@@ -289,7 +348,7 @@ class _TeacherSearchDialogNewState extends State<TeacherSearchDialogNew> {
         }
 
         final teacher = _teachers[index];
-        bool isSelected = widget.selectedValue == teacher['name'];
+        bool isSelected = _isSelected(teacher);
 
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -297,11 +356,11 @@ class _TeacherSearchDialogNewState extends State<TeacherSearchDialogNew> {
             color: isSelected ? Colors.blue[50] : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? Colors.blue[300]! : Colors.transparent,
-              width: 2,
+              color: isSelected ? Colors.blue[300]! : Colors.grey[200]!,
+              width: 1.5,
             ),
           ),
-          child: ListTile(
+          child: CheckboxListTile(
             title: Text(
               teacher['name']!,
               style: TextStyle(
@@ -315,10 +374,10 @@ class _TeacherSearchDialogNewState extends State<TeacherSearchDialogNew> {
               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             )
                 : null,
-            trailing: isSelected
-                ? Icon(Icons.check_circle, color: Colors.blue[700])
-                : null,
-            onTap: () => widget.onSelected(teacher),
+            value: isSelected,
+            onChanged: (_) => _toggleSelection(teacher),
+            activeColor: Colors.blue[700],
+            controlAffinity: ListTileControlAffinity.leading,
           ),
         );
       },
