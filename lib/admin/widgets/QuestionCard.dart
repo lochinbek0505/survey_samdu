@@ -375,7 +375,11 @@ class _QuestionCardState extends State<QuestionCard> {
           ),
           TextButton(
             onPressed: () {
-
+              var provider = Provider.of<QuestionsProvider>(
+                context,
+                listen: false,
+              );
+              provider.deleteOption(context, option.id, widget.surveyId);
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Variant o\'chirildi')),
@@ -424,8 +428,6 @@ class _QuestionCardState extends State<QuestionCard> {
                 question.survey!.toInt(),
               );
               Navigator.pop(ctx);
-
-
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('O\'chirish'),

@@ -65,28 +65,23 @@ class Questions {
 class Results {
   num? optionId;
   String? optionText;
+  String? eduType;
   num? count;
-  String? text; // JSON dagi "text" maydoni uchun
-  List<Teachers>? teachersList;
-  List<Departments>? departmentsList; // Dynamic o'rniga maxsus class
+  String? text; // "text" turidagi savollar uchun
+  List<EduItems>? eduItems;
 
-  Results({this.optionId, this.optionText, this.count, this.text, this.teachersList, this.departmentsList});
+  Results({this.optionId, this.optionText, this.eduType, this.count, this.text, this.eduItems});
 
   Results.fromJson(dynamic json) {
     optionId = json['option_id'];
     optionText = json['option_text'];
+    eduType = json['edu_type'];
     count = json['count'];
     text = json['text'];
-    if (json['teachers'] != null) {
-      teachersList = [];
-      json['teachers'].forEach((v) {
-        teachersList?.add(Teachers.fromJson(v));
-      });
-    }
-    if (json['departments'] != null) {
-      departmentsList = [];
-      json['departments'].forEach((v) {
-        departmentsList?.add(Departments.fromJson(v));
+    if (json['edu_items'] != null) {
+      eduItems = [];
+      json['edu_items'].forEach((v) {
+        eduItems?.add(EduItems.fromJson(v));
       });
     }
   }
@@ -95,58 +90,33 @@ class Results {
     final map = <String, dynamic>{};
     map['option_id'] = optionId;
     map['option_text'] = optionText;
+    map['edu_type'] = eduType;
     map['count'] = count;
     map['text'] = text;
-    if (teachersList != null) {
-      map['teachers'] = teachersList?.map((v) => v.toJson()).toList();
-    }
-    if (departmentsList != null) {
-      map['departments'] = departmentsList?.map((v) => v.toJson()).toList();
+    if (eduItems != null) {
+      map['edu_items'] = eduItems?.map((v) => v.toJson()).toList();
     }
     return map;
   }
 }
 
-class Teachers {
-  String? teacherId;
-  String? teacherName;
+class EduItems {
+  String? eduId;
+  String? eduText;
   num? count;
 
-  Teachers({this.teacherId, this.teacherName, this.count});
+  EduItems({this.eduId, this.eduText, this.count});
 
-  Teachers.fromJson(dynamic json) {
-    teacherId = json['teacher_id'];
-    teacherName = json['teacher_name'];
+  EduItems.fromJson(dynamic json) {
+    eduId = json['edu_id'];
+    eduText = json['edu_text'];
     count = json['count'];
   }
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
-    map['teacher_id'] = teacherId;
-    map['teacher_name'] = teacherName;
-    map['count'] = count;
-    return map;
-  }
-}
-
-class Departments {
-  String? departmentId;
-  String? departmentName;
-  num? count;
-
-  Departments({this.departmentId, this.departmentName, this.count});
-
-  Departments.fromJson(dynamic json) {
-    // JSON dagi noodatiy key'larga moslash
-    departmentId = json['department_id'];
-    departmentName = json['department_name'];
-    count = json['count'];
-  }
-
-  Map<String, dynamic> toJson() {
-    final map = <String, dynamic>{};
-    map['department_id'] = departmentId;
-    map['department_name'] = departmentName;
+    map['edu_id'] = eduId;
+    map['edu_text'] = eduText;
     map['count'] = count;
     return map;
   }

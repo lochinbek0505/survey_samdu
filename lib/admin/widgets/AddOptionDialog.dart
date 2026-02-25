@@ -107,15 +107,14 @@ class _AddOptionDialogState extends State<AddOptionDialog> {
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
-              final optionData = {
-                'text': _textController.text,
+              // Create option data with explicit types
+              final Map<String, dynamic> optionData = {
+                'text': _textController.text.trim(),
                 'order': int.parse(_orderController.text),
                 'edu_type': _eduType,
               };
 
-              // Map<String, dynamic> sifatida qaytarish
-              widget.onSave(Map<String, dynamic>.from(optionData));
-
+              widget.onSave(optionData);
               Navigator.pop(context);
             }
           },

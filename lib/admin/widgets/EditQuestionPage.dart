@@ -43,17 +43,21 @@ class _EditQuestionPageState extends State<EditQuestionPage> {
     _isRequired = widget.question.isRequired;
     _selectedGroupId = widget.question.group;
 
-    _options = widget.question.options
-        .map(
-          (o) => {
-            'id': o.id,
-            'text': o.text,
-            'order': o.order,
-            'edu_type': o.eduType,
-            'child_questions': o.childQuestions.map((c) => c.toJson()).toList(),
-          },
-        )
-        .toList();
+    // Create options list with explicit type casting
+    _options = widget.question.options.map((o) {
+      final Map<String, dynamic> optionMap = {
+        'text': o.text,
+        'order': o.order,
+        'edu_type': o.eduType,
+        'child_questions': o.childQuestions
+            .map((c) => c.toJson() as Map<String, dynamic>)
+            .toList(),
+      };
+      if (o.id != null) {
+        optionMap['id'] = o.id;
+      }
+      return optionMap;
+    }).toList();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<QuestionsProvider>(
@@ -287,7 +291,16 @@ class _EditQuestionPageState extends State<EditQuestionPage> {
       context: context,
       builder: (ctx) => AddOptionDialog(
         onSave: (optionData) {
-          setState(() => _options.add(Map<String, dynamic>.from(optionData)));
+          setState(() {
+            // Create a completely new Map with explicit type
+            final Map<String, dynamic> newOption = {
+              'text': optionData['text'] as String,
+              'order': optionData['order'] as int,
+              'edu_type': optionData['edu_type'] as String,
+              'child_questions': <Map<String, dynamic>>[],
+            };
+            _options.add(newOption);
+          });
         },
       ),
     );
@@ -300,9 +313,25 @@ class _EditQuestionPageState extends State<EditQuestionPage> {
         initialData: _options[index],
         onSave: (optionData) {
           setState(() {
+            // Get existing data
             final existingId = _options[index]['id'];
-            _options[index] = Map<String, dynamic>.from(optionData);
-            if (existingId != null) _options[index]['id'] = existingId;
+            final existingChildQuestions = _options[index]['child_questions'] ?? <Map<String, dynamic>>[];
+
+            // Create a completely new Map with explicit type
+            final Map<String, dynamic> updatedOption = {
+              'text': optionData['text'] as String,
+              'order': optionData['order'] as int,
+              'edu_type': optionData['edu_type'] as String,
+              'child_questions': existingChildQuestions,
+            };
+
+            // Add id if it exists
+            if (existingId != null) {
+              updatedOption['id'] = existingId;
+            }
+
+            // Replace the entire map at this index
+            _options[index] = updatedOption;
           });
         },
       ),

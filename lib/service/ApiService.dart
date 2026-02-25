@@ -259,6 +259,24 @@ class ApiService {
     }
   }
 
+  Future<bool> deleteOption(token, id) async {
+    try {
+      final response = await _dio.delete(
+        "options/$id/",
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      return response.statusCode == 204;
+    } catch (e) {
+      print(e);
+      return false;
+    }
+  }
+
   Future<bool> deleteSurveyGroup(token, id) async {
     try {
       final response = await _dio.delete(

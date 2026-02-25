@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../models/question_model.dart';
 
-
 class OptionItem extends StatelessWidget {
   final OptionModel option;
   final String optionNumber;
@@ -151,16 +150,6 @@ class OptionItem extends StatelessWidget {
             }
           },
           itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'edit',
-              child: Row(
-                children: [
-                  Icon(Icons.edit, size: 18),
-                  SizedBox(width: 8),
-                  Text('Tahrirlash'),
-                ],
-              ),
-            ),
             const PopupMenuItem(
               value: 'add_child',
               child: Row(

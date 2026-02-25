@@ -38,7 +38,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
     try {
       final provider = Provider.of<AdminProvider>(context, listen: false);
-      final result = await provider.getStatics(widget.index, '',context);
+      final result = await provider.getStatics(widget.index, '', context);
 
       setState(() {
         _generalStatistics = result;
@@ -67,9 +67,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     try {
       final provider = Provider.of<AdminProvider>(context, listen: false);
       final result = await provider.getStatics(
-          widget.index,
-          '?session=${_selectedSession!.id}',context
-      );
+          widget.index, '?session=${_selectedSession!.id}', context);
 
       setState(() {
         _statistics = result;
@@ -573,12 +571,11 @@ class _StatisticsPageState extends State<StatisticsPage> {
   }
 
   Widget _buildChoiceQuestionCard(Questions question, int questionNumber) {
-    final total =
-        question.resultsList?.fold<num>(
-          0,
-              (sum, result) => sum + (result.count ?? 0),
-        ) ??
-            0;
+    final total = question.resultsList?.fold<num>(
+      0,
+          (sum, result) => sum + (result.count ?? 0),
+    ) ??
+        0;
 
     return Card(
       elevation: 2,
@@ -699,10 +696,49 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
+  // EDU type bo'yicha icon va rang olish
+  IconData _getEduTypeIcon(String? eduType) {
+    switch (eduType) {
+      case 'teacher':
+        return Icons.person;
+      case 'department':
+        return Icons.business;
+      case 'lesson':
+        return Icons.book;
+      default:
+        return Icons.info;
+    }
+  }
+
+  Color _getEduTypeColor(String? eduType) {
+    switch (eduType) {
+      case 'teacher':
+        return Colors.deepPurple;
+      case 'department':
+        return Colors.blue;
+      case 'lesson':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getEduTypeLabel(String? eduType) {
+    switch (eduType) {
+      case 'teacher':
+        return 'O\'qituvchilar';
+      case 'department':
+        return 'Kafedralar';
+      case 'lesson':
+        return 'Fanlar';
+      default:
+        return 'Boshqa';
+    }
+  }
+
   Widget _buildResultItem(Results result, String percentage) {
-    // Teachers yoki departments mavjudligini tekshirish
-    final hasTeachers = result.teachersList != null && result.teachersList!.isNotEmpty;
-    final hasDepartments = result.departmentsList != null && result.departmentsList!.isNotEmpty;
+    // Edu items mavjudligini tekshirish
+    final hasEduItems = result.eduItems != null && result.eduItems!.isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -715,14 +751,14 @@ class _StatisticsPageState extends State<StatisticsPage> {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.deepPurple[100],
+            color: _getEduTypeColor(result.eduType).withOpacity(0.2),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             '${result.count}',
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.deepPurple,
+              color: _getEduTypeColor(result.eduType),
             ),
           ),
         ),
@@ -730,174 +766,132 @@ class _StatisticsPageState extends State<StatisticsPage> {
           result.optionText ?? '',
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
         ),
-        subtitle: Text(
-          '$percentage% (${result.count} ta javob)',
-          style: TextStyle(color: Colors.grey[600], fontSize: 14),
-        ),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$percentage% (${result.count} ta javob)',
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // O'qituvchilar bo'limi
-                if (hasTeachers) ...[
-                  Row(
-                    children: [
-                      Icon(Icons.person, size: 18, color: Colors.grey[600]),
-                      const SizedBox(width: 8),
-                      Text(
-                        'O\'qituvchilar bo\'yicha:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[800],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  ...result.teachersList!.map((teacher) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: Colors.deepPurple[100],
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${teacher.count}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.deepPurple,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  teacher.teacherName ?? '',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  '${teacher.count} marta belgilandi',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ],
-
-                // Departmentlar bo'limi
-                if (hasDepartments) ...[
-                  if (hasTeachers) const SizedBox(height: 16),
-                  if (hasTeachers) Divider(color: Colors.grey[300]),
-                  if (hasTeachers) const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Icon(Icons.business, size: 18, color: Colors.grey[600]),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Kafedra bo\'yicha:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[800],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  ...result.departmentsList!.map((department) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: Colors.blue[100],
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${department.count}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  department.departmentName ?? '',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  '${department.count} marta belgilandi',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ],
-
-                // Agar hech narsa bo'lmasa
-                if (!hasTeachers && !hasDepartments)
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        'Qo\'shimcha ma\'lumot yo\'q',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+            if (result.eduType != null && result.eduType != 'none')
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  children: [
+                    Icon(
+                      _getEduTypeIcon(result.eduType),
+                      size: 14,
+                      color: _getEduTypeColor(result.eduType),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _getEduTypeLabel(result.eduType),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _getEduTypeColor(result.eduType),
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        children: [
+          if (hasEduItems)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        _getEduTypeIcon(result.eduType),
+                        size: 18,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${_getEduTypeLabel(result.eduType)} bo\'yicha:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                    ],
                   ),
-              ],
+                  const SizedBox(height: 12),
+                  ...result.eduItems!.map((eduItem) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: _getEduTypeColor(result.eduType)
+                                  .withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${eduItem.count}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: _getEduTypeColor(result.eduType),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  eduItem.eduText ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  '${eduItem.count} marta belgilandi',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+            )
+          else
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Qo\'shimcha ma\'lumot yo\'q',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+                ),
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -985,8 +979,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 separatorBuilder: (context, index) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final response = responses[index];
-                  final hasTeachers = response.teachersList != null && response.teachersList!.isNotEmpty;
-                  final hasDepartments = response.departmentsList != null && response.departmentsList!.isNotEmpty;
 
                   return Container(
                     padding: const EdgeInsets.all(16),
@@ -1028,122 +1020,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
                             ),
                           ],
                         ),
-
-                        // Teachers yoki Departments mavjud bo'lsa ko'rsatamiz
-                        if (hasTeachers || hasDepartments) ...[
-                          const SizedBox(height: 12),
-                          Divider(color: Colors.grey[300]),
-                          const SizedBox(height: 12),
-
-                          // O'qituvchilar
-                          if (hasTeachers) ...[
-                            Row(
-                              children: [
-                                Icon(Icons.person, size: 16, color: Colors.grey[600]),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'O\'qituvchilar:',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[700],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            ...response.teachersList!.map((teacher) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 6),
-                                child: Row(
-                                  children: [
-                                    const SizedBox(width: 22),
-                                    Container(
-                                      width: 24,
-                                      height: 24,
-                                      decoration: BoxDecoration(
-                                        color: Colors.deepPurple[100],
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          '${teacher.count}',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.deepPurple,
-                                            fontSize: 10,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        teacher.teacherName ?? '',
-                                        style: const TextStyle(fontSize: 13),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ],
-
-                          // Departmentlar
-                          if (hasDepartments) ...[
-                            if (hasTeachers) const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Icon(Icons.business, size: 16, color: Colors.grey[600]),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Kafedralar:',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[700],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            ...response.departmentsList!.map((department) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 6),
-                                child: Row(
-                                  children: [
-                                    const SizedBox(width: 22),
-                                    Container(
-                                      width: 24,
-                                      height: 24,
-                                      decoration: BoxDecoration(
-                                        color: Colors.blue[100],
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          '${department.count}',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.blue,
-                                            fontSize: 10,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        department.departmentName ?? '',
-                                        style: const TextStyle(fontSize: 13),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ],
-                        ],
                       ],
                     ),
                   );

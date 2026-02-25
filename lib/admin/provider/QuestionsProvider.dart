@@ -200,4 +200,43 @@ class QuestionsProvider with ChangeNotifier {
       _setLoading(false);
     }
   }
+
+  Future<bool> deleteOption(
+    BuildContext context,
+    int questionId,
+    int surveyId,
+  ) async {
+    _setLoading(true);
+
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        _setLoading(false);
+        return false;
+      }
+
+      final response = await _apiService.deleteOption(token, questionId);
+
+      if (response) {
+        await getQuestions(surveyId);
+        if (context.mounted) {
+          _showSnackBar(context, "Savol muvaffaqiyatli o'chirildi");
+        }
+        return true;
+      } else {
+        if (context.mounted) {
+          _showSnackBar(context, "Savol o'chirishda xatolik", isError: true);
+        }
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Error deleting question: $e');
+      if (context.mounted) {
+        _showSnackBar(context, "Savol o'chirishda xatolik", isError: true);
+      }
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
 }
