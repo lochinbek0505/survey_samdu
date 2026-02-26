@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:flutter/material.dart';
+import 'package:survey_samdu/admin/service/CacheService.dart';
+
 import '../../models/surveys_model.dart';
 import '../../models/users_model.dart';
 
@@ -19,17 +21,20 @@ class _SurveyDialogWidgetState extends State<SurveyDialogWidget> {
   late TextEditingController titleController;
   late TextEditingController descriptionController;
   UserData? selectedOwner;
+  CacheService service = CacheService();
 
   @override
   void initState() {
     super.initState();
     titleController = TextEditingController(text: widget.data?.title ?? '');
-    descriptionController = TextEditingController(text: widget.data?.description ?? '');
+    descriptionController = TextEditingController(
+      text: widget.data?.description ?? '',
+    );
 
     if (widget.data?.owner != null && widget.owners?.dataListList != null) {
       try {
         selectedOwner = widget.owners!.dataListList!.firstWhere(
-              (element) => element.id == widget.data!.owner,
+          (element) => element.id == widget.data!.owner,
         );
       } catch (_) {
         selectedOwner = null;
@@ -47,7 +52,7 @@ class _SurveyDialogWidgetState extends State<SurveyDialogWidget> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
+    var login = service.readLoginResponse();
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       elevation: 0,
@@ -76,25 +81,36 @@ class _SurveyDialogWidgetState extends State<SurveyDialogWidget> {
                 const SizedBox(height: 24),
 
                 // Mas'ul shaxs (Dropdown)
-                _buildLabel("Ma'sul shaxs"),
-                DropdownSearch<UserData>(
-                  items: (f, p) => widget.owners?.dataListList ?? [],
-                  selectedItem: selectedOwner,
-                  itemAsString: (UserData u) => u.username ?? "Noma'lum",
-                  compareFn: (item, selectedItem) => item.id == selectedItem.id,
-                  onChanged: (value) => setState(() => selectedOwner = value),
-                  decoratorProps: _dropdownDecoration(),
-                  popupProps: _popupDecoration(),
-                  validator: (value) => value == null ? "Iltimos, mas'ulni tanlang" : null,
-                ),
+                login!.user!.isSuperuser!
+                    ? _buildLabel("Ma'sul shaxs")
+                    : SizedBox.shrink(),
+                login!.user!.isSuperuser!
+                    ? DropdownSearch<UserData>(
+                        items: (f, p) => widget.owners?.dataListList ?? [],
+                        selectedItem: selectedOwner,
+                        itemAsString: (UserData u) => u.username ?? "Noma'lum",
+                        compareFn: (item, selectedItem) =>
+                            item.id == selectedItem.id,
+                        onChanged: (value) =>
+                            setState(() => selectedOwner = value),
+                        decoratorProps: _dropdownDecoration(),
+                        popupProps: _popupDecoration(),
+                        validator: (value) =>
+                            value == null ? "Iltimos, mas'ulni tanlang" : null,
+                      )
+                    : SizedBox.shrink(),
                 const SizedBox(height: 20),
 
                 // Sarlavha
                 _buildLabel("Sarlavha"),
                 TextFormField(
                   controller: titleController,
-                  decoration: _inputDecoration("Mavzuni kiriting", Icons.edit_note),
-                  validator: (v) => v!.isEmpty ? "Sarlavha bo'sh bo'lmasin" : null,
+                  decoration: _inputDecoration(
+                    "Mavzuni kiriting",
+                    Icons.edit_note,
+                  ),
+                  validator: (v) =>
+                      v!.isEmpty ? "Sarlavha bo'sh bo'lmasin" : null,
                 ),
                 const SizedBox(height: 20),
 
@@ -103,8 +119,12 @@ class _SurveyDialogWidgetState extends State<SurveyDialogWidget> {
                 TextFormField(
                   controller: descriptionController,
                   maxLines: 3,
-                  decoration: _inputDecoration("Batafsil ma'lumot...", Icons.description_outlined),
-                  validator: (v) => v!.isEmpty ? "Tavsif bo'sh bo'lmasin" : null,
+                  decoration: _inputDecoration(
+                    "Batafsil ma'lumot...",
+                    Icons.description_outlined,
+                  ),
+                  validator: (v) =>
+                      v!.isEmpty ? "Tavsif bo'sh bo'lmasin" : null,
                 ),
                 const SizedBox(height: 32),
 
@@ -125,7 +145,10 @@ class _SurveyDialogWidgetState extends State<SurveyDialogWidget> {
       children: [
         CircleAvatar(
           backgroundColor: Colors.blue.withOpacity(0.1),
-          child: Icon(widget.data == null ? Icons.add : Icons.edit, color: Colors.blue),
+          child: Icon(
+            widget.data == null ? Icons.add : Icons.edit,
+            color: Colors.blue,
+          ),
         ),
         const SizedBox(width: 12),
         Text(
@@ -141,7 +164,11 @@ class _SurveyDialogWidgetState extends State<SurveyDialogWidget> {
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
         text,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.grey),
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+          color: Colors.grey,
+        ),
       ),
     );
   }
@@ -192,9 +219,14 @@ class _SurveyDialogWidgetState extends State<SurveyDialogWidget> {
             onPressed: () => Navigator.pop(context),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text("Bekor qilish", style: TextStyle(color: Colors.grey)),
+            child: const Text(
+              "Bekor qilish",
+              style: TextStyle(color: Colors.grey),
+            ),
           ),
         ),
         const SizedBox(width: 12),
@@ -206,9 +238,14 @@ class _SurveyDialogWidgetState extends State<SurveyDialogWidget> {
               foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text("Saqlash", style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              "Saqlash",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ),
       ],
@@ -216,16 +253,31 @@ class _SurveyDialogWidgetState extends State<SurveyDialogWidget> {
   }
 
   void _handleSave() {
-    if (_formKey.currentState!.validate() && selectedOwner != null) {
-      final newData = SurveyData(
-        id: widget.data?.id ?? DateTime.now().millisecondsSinceEpoch,
-        title: titleController.text.trim(),
-        description: descriptionController.text.trim(),
-        owner: int.tryParse(selectedOwner!.id.toString()),
-      );
+    var p = service.readLoginResponse();
+    if (p!.user!.isSuperuser!) {
+      if (_formKey.currentState!.validate() && selectedOwner != null) {
+        final newData = SurveyData(
+          id: widget.data?.id ?? DateTime.now().millisecondsSinceEpoch,
+          title: titleController.text.trim(),
+          description: descriptionController.text.trim(),
+          owner: int.tryParse(selectedOwner!.id.toString()),
+        );
 
-      if (widget.onSave != null) widget.onSave!(newData);
-      Navigator.pop(context);
+        if (widget.onSave != null) widget.onSave!(newData);
+        Navigator.pop(context);
+      }
+    }else{
+      if (_formKey.currentState!.validate()) {
+        final newData = SurveyData(
+          id: widget.data?.id ?? DateTime.now().millisecondsSinceEpoch,
+          title: titleController.text.trim(),
+          description: descriptionController.text.trim(),
+          owner: p.user!.id,
+        );
+
+        if (widget.onSave != null) widget.onSave!(newData);
+        Navigator.pop(context);
+      }
     }
   }
 }
