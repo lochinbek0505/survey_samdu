@@ -215,7 +215,7 @@ class _EditSessionDialogState extends State<EditSessionDialog> {
                       ),
                     ),
                     validator: (value) =>
-                    value?.isEmpty ?? true ? 'Nomini kiriting' : null,
+                        value?.isEmpty ?? true ? 'Nomini kiriting' : null,
                   ),
                   const SizedBox(height: 16),
 
@@ -244,7 +244,9 @@ class _EditSessionDialogState extends State<EditSessionDialog> {
                           ),
                         ),
                         value: _selectedSurvey,
-                        items: provider.surveysModel.dataListList?.map((survey) {
+                        items: provider.surveysModel.dataListList?.map((
+                          survey,
+                        ) {
                           return DropdownMenuItem<SurveyData>(
                             value: survey,
                             child: SizedBox(
@@ -259,7 +261,7 @@ class _EditSessionDialogState extends State<EditSessionDialog> {
                           });
                         },
                         validator: (value) =>
-                        value == null ? 'So\'rovnomani tanlang' : null,
+                            value == null ? 'So\'rovnomani tanlang' : null,
                       );
                     },
                   ),
@@ -414,8 +416,8 @@ class _EditSessionDialogState extends State<EditSessionDialog> {
                       child: Text(
                         _selectedDateTime != null
                             ? DateFormat(
-                          'dd.MM.yyyy HH:mm',
-                        ).format(_selectedDateTime!)
+                                'dd.MM.yyyy HH:mm',
+                              ).format(_selectedDateTime!)
                             : 'Vaqtni tanlang',
                       ),
                     ),
@@ -435,47 +437,47 @@ class _EditSessionDialogState extends State<EditSessionDialog> {
                             onPressed: provider.loading
                                 ? null
                                 : () async {
-                              if (_formKey.currentState!.validate() &&
-                                  _selectedDateTime != null) {
-                                final data = {
-                                  "survey": _selectedSurvey!.id,
-                                  "name": _nameController.text,
-                                  "group_name": _getGroupName(),
-                                  "start_time": _selectedDateTime!
-                                      .toIso8601String(),
-                                  "duration": int.parse(
-                                    _durationController.text,
-                                  ),
-                                };
+                                    if (_formKey.currentState!.validate() &&
+                                        _selectedDateTime != null) {
+                                      final data = {
+                                        "survey": _selectedSurvey!.id,
+                                        "name": _nameController.text,
+                                        "group_name": _getGroupName(),
+                                        "start_time": _selectedDateTime!
+                                            .toIso8601String(),
+                                        "duration": int.parse(
+                                          _durationController.text,
+                                        ),
+                                      };
 
-                                await provider.updateSession(
-                                  data,
-                                  widget.session.id,
-                                );
-                                await provider.getSessions(context);
+                                      await provider.updateSession(
+                                        data,
+                                        widget.session.id,
+                                      );
+                                      await provider.getSessions(context);
 
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(
-                                  context,
-                                ).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Sessiya muvaffaqiyatli yangilandi',
-                                    ),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-                              }
-                            },
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Sessiya muvaffaqiyatli yangilandi',
+                                          ),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
+                                    }
+                                  },
                             icon: provider.loading
                                 ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
                                 : const Icon(Icons.save),
                             label: Text(
                               provider.loading ? 'Saqlanmoqda...' : 'Saqlash',

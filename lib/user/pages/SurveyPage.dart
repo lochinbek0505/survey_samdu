@@ -956,27 +956,15 @@ class _SurveyPageState extends State<SurveyPage> {
 
           // LESSON uchun: Faculty (multi) → Subject (multi)
           if (eduType == 'lesson') ...[
-            FacultyDropdown(
-              value: currentData['faculty'] as List<Map<String, dynamic>>?,
+            const SizedBox(height: 16),
+            LessonDropdown(
+              value: currentData['lesson'] as List<Map<String, dynamic>>?,
               onChanged: (items) {
                 _preserveScrollAndUpdate(() {
-                  currentData['faculty'] = items ?? [];
-                  currentData['lesson'] = [];
+                  currentData['lesson'] = items ?? [];
                 });
               },
             ),
-            if ((currentData['faculty'] as List).isNotEmpty) ...[
-              const SizedBox(height: 16),
-              LessonDropdown(
-                facultyId: (currentData['faculty'] as List).first['id'],
-                value: currentData['lesson'] as List<Map<String, dynamic>>?,
-                onChanged: (items) {
-                  _preserveScrollAndUpdate(() {
-                    currentData['lesson'] = items ?? [];
-                  });
-                },
-              ),
-            ],
           ],
         ],
       ),
